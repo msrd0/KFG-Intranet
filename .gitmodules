@@ -1,0 +1,3 @@
+[submodule "QtWebApp"]
+	path = QtWebApp
+	url = https://github.com/msrd0/QtWebApp.git
