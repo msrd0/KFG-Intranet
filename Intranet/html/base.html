@@ -1,0 +1,44 @@
+<!doctype HTML>
+<html>
+<head>
+
+<title>KFG Intranet</title>
+<meta name="author" content="Dominic Meiser (J1a)">
+<meta name="robots" content="noindex">
+
+<link rel="stylesheet" href="/static/main.css">
+<link rel="stylesheet" href="/static/{name}.css">
+
+</head>
+<body>
+<div id="content">
+
+<h1>KFG Intranet</h1>
+
+<nav id="menu">
+    <a href="/index">Home</a>
+    <a href="/help">Hilfe</a>
+    <a href="/administration">Verwaltung</a>
+    <a href="/imprint">Impressum</a>
+</nav>
+
+<div style="display: flex;">
+    <div id="apps" style="width: 70%;">
+        {body}
+    </div>
+    <div id="news" style="width: 30%;">
+        <h3>News</h3>
+        <div class="entry">
+            <p>Hier stehen tolle Nachrichten.</p>
+            <div class="date">7. Dezember 2015</div>
+        </div>
+        <div class="entry">
+            <p>Und hier stehen ältere Nachrichten.</p>
+            <div class="date">6. Dezember 2015</div>
+        </div>
+    </div>
+</div>
+
+</div>
+</body>
+</html>
