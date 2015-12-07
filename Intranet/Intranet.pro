@@ -1,4 +1,4 @@
-QT += core
+QT += core network
 QT -= gui
 
 TEMPLATE = app
@@ -7,7 +7,12 @@ CONFIG += console
 CONFIG -= app_bundle
 CONFIG += c++11
 
-LIBS += -L ../QtWebApp -lQtWebApp
+debug {
+    LIBS += ../QtWebApp/libQtWebApp.so
+}
+release {
+    LIBS += -L ../QtWebApp -lQtWebApp
+}
 INCLUDEPATH += ../QtWebApp/httpserver
 INCLUDEPATH += ../QtWebApp/logging
 INCLUDEPATH += ../QtWebApp/qtservice
@@ -33,4 +38,6 @@ RESOURCES += \
 
 DISTFILES += \
     html/html.ini \
-    html/index.html
+    html/index.html \
+    html/base.html \
+    static/main.css

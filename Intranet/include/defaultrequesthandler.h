@@ -2,6 +2,7 @@
 #define DEFAULTREQUESTHANDLER_H
 
 #include <httprequesthandler.h>
+#include <templatecache.h>
 
 class DefaultRequestHandler : public HttpRequestHandler
 {
@@ -11,6 +12,9 @@ public:
     DefaultRequestHandler(QObject *parent = 0);
 
     void service(HttpRequest& request, HttpResponse& response);
+
+private:
+    TemplateCache templates;
 
 };
 
