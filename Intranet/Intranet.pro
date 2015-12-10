@@ -7,6 +7,10 @@ CONFIG += console
 CONFIG -= app_bundle
 CONFIG += c++11
 
+clang {
+	QMAKE_CXXFLAGS_RELEASE -= -fvar-tracking-assignments -Og
+}
+
 debug {
     LIBS += ../QtWebApp/libQtWebApp.so
 }
