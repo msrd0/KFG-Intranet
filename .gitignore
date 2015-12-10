@@ -31,3 +31,7 @@
 *.user
 build/
 build-*/
+
+# Other Stuff
+*~
+Makefile
