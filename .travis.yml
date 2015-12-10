@@ -1,0 +1,22 @@
+language: c++
+sudo: required
+dist: trusty
+
+compiler:
+ - gcc
+ - clang
+
+addons:
+  apt:
+    sources:
+      - ubuntu-sdk-team
+    packages:
+      - qt5-qmake
+      - qtbase5-dev
+      - qtdeclarative5-dev
+      - libqtwebkit5-dev
+      - libsqlite3-dev
+
+script:
+  - qmake -qt=qt5 -v
+  - ./intranet.sh release qt5 buildonly
