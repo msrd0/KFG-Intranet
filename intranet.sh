@@ -11,13 +11,27 @@ if [ "$1" == "release" ]; then
         debug=""
 fi
 
+spec="linux-g++"
+if command -v clang &>/dev/null
+then
+	spec="linux-clang"
+fi
+if [ "$CC" == "clang" ] || [ "$CXX" == "clang++" ]
+then
+	spec="linux-clang"
+fi
+if [ "$CC" == "gcc" ] || [ "$CXX" == "g++" ]
+then
+	spec="linux-g++"
+fi
+
 cwd="$PWD"
 cd "`dirname "$0"`"
 
-echo -e "\e[1m==> Building intranet ...\e[0m"
+echo -e "\e[1m==> Building intranet with $spec ...\e[0m"
 mkdir -p build/
 cd build/
-qmake ../KFG-Intranet.pro "$debug" || exit 1
+qmake -spec "$spec" ../KFG-Intranet.pro "$debug" || exit 1
 make -j4 || exit 1
 
 export "PATH=$PWD:$PATH"
