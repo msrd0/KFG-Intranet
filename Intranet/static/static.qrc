@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/static">
+        <file>main.css</file>
+        <file>static.ini</file>
+    </qresource>
+</RCC>

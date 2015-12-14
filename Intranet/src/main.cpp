@@ -1,9 +1,13 @@
+#include "defaultrequesthandler.h"
+
 #include <QCoreApplication>
 #include <QCommandLineOption>
 #include <QCommandLineParser>
 #include <QDebug>
 #include <QDir>
 #include <QSettings>
+
+#include <httplistener.h>
 
 int main(int argc, char *argv[])
 {
@@ -37,8 +41,15 @@ int main(int argc, char *argv[])
         }
     }
 
-    QSettings *config = new QSettings(args.size()>0 ? args[0] : "/etc/intranet/config.ini");
-
+    QSettings *config = new QSettings(args.size()>0 ? args[0] :
+                                  #ifdef QT_DEBUG
+                                      "config.ini"
+                                  #else
+                                      "/etc/intranet/config.ini"
+                                  #endif
+                                      , QSettings::IniFormat);
+    qDebug() << "Using config file " << config->fileName();
+    new HttpListener(config, new DefaultRequestHandler);
 
     return app.exec();
 }

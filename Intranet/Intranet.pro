@@ -38,10 +38,12 @@ HEADERS += \
     include/defaultrequesthandler.h
 
 RESOURCES += \
-    html/html.qrc
+    html/html.qrc \
+    static/static.qrc
 
 DISTFILES += \
     html/html.ini \
     html/index.html \
     html/base.html \
-    static/main.css
+    static/main.css \
+    static/static.ini

@@ -2,6 +2,7 @@
 #define DEFAULTREQUESTHANDLER_H
 
 #include <httprequesthandler.h>
+#include <staticfilecontroller.h>
 #include <templatecache.h>
 
 class DefaultRequestHandler : public HttpRequestHandler
@@ -14,6 +15,7 @@ public:
     void service(HttpRequest& request, HttpResponse& response);
 
 private:
+    StaticFileController staticFiles;
     TemplateCache templates;
 
 };

@@ -2,6 +2,7 @@
 
 DefaultRequestHandler::DefaultRequestHandler(QObject *parent)
     : HttpRequestHandler(parent)
+    , staticFiles(new QSettings(":/static/static.ini", QSettings::IniFormat))
     , templates(new QSettings(":/html/html.ini", QSettings::IniFormat))
 {
 }
@@ -9,19 +10,21 @@ DefaultRequestHandler::DefaultRequestHandler(QObject *parent)
 void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response)
 {
     QByteArray path = request.getPath().mid(1);
+    response.setHeader("Server", QByteArray("KFG-Intranet (QtWebApp ") + getQtWebAppLibVersion() + ")");
 
     if (path == "")
     {
         response.redirect("index");
+        return;
     }
 
     if (path.startsWith("static/"))
     {
-        path = path.mid(7);
-        // todo
+        staticFiles.service(request, response);
         return;
     }
 
+    response.setHeader("Content-Type", "text/html; charset=utf-8");
     Template base = templates.getTemplate("base");
     base.setVariable("name", path);
     if (path == "base")
