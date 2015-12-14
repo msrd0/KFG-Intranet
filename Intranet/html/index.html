@@ -1,1 +1,12 @@
-hallo welt
+<div class="grid">
+    {loop row}
+        <div class="row">
+            {loop row.col}
+                <div class="col">
+                    <div><img src="{row.col.img}"></div>
+                    <div style="text-align: center;">{row.col.text}</div>
+                </div>
+            {end row.col}
+        </div>
+    {end row}
+</div>
