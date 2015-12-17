@@ -1,6 +1,9 @@
 #ifndef DEFAULTREQUESTHANDLER_H
 #define DEFAULTREQUESTHANDLER_H
 
+#include <QDir>
+#include <QSqlDatabase>
+
 #include <httprequesthandler.h>
 #include <staticfilecontroller.h>
 #include <templatecache.h>
@@ -10,13 +13,16 @@ class DefaultRequestHandler : public HttpRequestHandler
     Q_OBJECT
 
 public:
-    DefaultRequestHandler(QObject *parent = 0);
+    DefaultRequestHandler(const QDir &dataDir, QObject *parent = 0);
 
     void service(HttpRequest& request, HttpResponse& response);
 
 private:
     StaticFileController staticFiles;
     TemplateCache templates;
+
+    QSqlDatabase *db;
+    bool exec(const QString &query);
 
 };
 

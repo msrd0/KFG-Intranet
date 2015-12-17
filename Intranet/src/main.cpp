@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
                                   #endif
                                       , QSettings::IniFormat);
     qDebug() << "Using config file " << config->fileName();
-    new HttpListener(config, new DefaultRequestHandler);
+    new HttpListener(config, new DefaultRequestHandler(dataDir));
 
     return app.exec();
 }

@@ -1,12 +1,10 @@
 <div class="grid">
-    {loop row}
+    {loop gridrow}
         <div class="row">
-            {loop row.col}
-                <div class="col">
-                    <div><img src="{row.col.img}"></div>
-                    <div style="text-align: center;">{row.col.text}</div>
-                </div>
-            {end row.col}
+            <div>{gridrow.col0}</div>
+            <div>{gridrow.col1}</div>
+            <div>{gridrow.col2}</div>
+            <div>{gridrow.col3}</div>
         </div>
-    {end row}
+    {end gridrow}
 </div>
