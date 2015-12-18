@@ -1,0 +1,36 @@
+{if loggedin}
+
+<div class="grid">
+    {loop gridrow}
+		<div class="rowtitle">{gridrow.name}</div>
+        <div class="row">
+            <div class="1to1" style="background-image: {gridrow.img0};">{gridrow.col0}</div>
+            <div class="1to1" style="background-image: {gridrow.img1};">{gridrow.col1}</div>
+            <div class="1to1" style="background-image: {gridrow.img2};">{gridrow.col2}</div>
+            <div class="1to1" style="background-image: {gridrow.img3};">{gridrow.col3}</div>
+        </div>
+    {end gridrow}
+</div>
+
+{else loggedin}
+
+{if wrongpw}
+<p style="color: red;">Das Passwort war falsch. Versuchs nochmal</p>
+{else wrongpw}
+<p>Um das Intranet zu verwalten wird ein Passwort benötigt.</p>
+{end wrongpw}
+
+<form action="/login" method="POST">
+	<input type="hidden" name="redir" value="/{name}">
+	Passwort: <input type="password" name="pw">
+	<input type="submit" value="Anmelden">
+</form>
+
+<hr>
+
+<p>Wenn du kein Passwort hast oder es vergessen hast, kannst du hier ein neues
+Passwort anfordern. Dieses Passwort wird vom Server ausgegeben, d.h. ohne
+Zugang zum Server ist es nicht möglich, das Passwort zu benutzen.</p>
+<a href="/newpw"><button>Neues Passwort</button></a>
+
+{end loggedin}

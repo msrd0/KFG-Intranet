@@ -48,4 +48,6 @@ DISTFILES += \
     static/main.css \
     static/static.ini \
     static/index.css \
-	static/main.js
+	static/main.js \
+    html/administration.html \
+    static/administration.css

@@ -1,8 +1,73 @@
 #include "defaultrequesthandler.h"
 
+#ifdef Q_OS_UNIX
+#  include <unistd.h>
+#else
+#  warning Some functions might not be available on non-unix platforms
+#endif
+
+#include <QCryptographicHash>
+#include <QRegularExpression>
 #include <QSqlError>
 #include <QSqlQuery>
 
+#ifndef PASSWORD_SALT_LENGTH
+#  define PASSWORD_SALT_LENGTH 32
+#endif
+#ifndef PASSWORD_REPEATS
+#  define PASSWORD_REPEATS 1000
+#endif
+
+QByteArray salt (uint length)
+{
+	QByteArray bytes;
+#ifdef Q_OS_UNIX
+	QFile urand("/dev/urandom");
+	if (urand.open(QIODevice::ReadOnly | QIODevice::Unbuffered))
+	{
+		while (bytes.length() < length)
+		{
+			bytes.append(urand.read(length - bytes.length()));
+		}
+		bytes = bytes.mid(0, length);
+	}
+	else
+#endif
+	{
+		for (uint i = 0; i < length; i++)
+			bytes.append((unsigned char)(qrand() % 256));
+	}
+	return bytes;
+}
+
+QByteArray password (const QByteArray &in)
+{
+	QByteArray pw = "$" + QByteArray::number(PASSWORD_REPEATS) + "$";
+	QByteArray s = salt(PASSWORD_SALT_LENGTH);
+	pw.append(s.toBase64()).append("$");
+	QByteArray hash = s + in;
+	for (uint i = 0; i < PASSWORD_REPEATS; i++)
+		hash = QCryptographicHash::hash(s + hash, QCryptographicHash::Sha256);
+	pw.append(hash.toBase64()).append("$");
+	return pw;
+}
+bool passwordMatch(const QByteArray &pw, const QByteArray &db)
+{
+	static QRegularExpression regex("^\\$(?P<repeats>\\d+)\\$(?P<salt>[^\\$]+)\\$(?P<hash>[^\\$]+)\\$$");
+	QRegularExpressionMatch match = regex.match(db);
+	if (!match.hasMatch())
+		return false;
+	uint db_repeats = match.captured("repeats").toUInt();
+	QByteArray db_salt = QByteArray::fromBase64(match.captured("salt").toLatin1());
+	QByteArray db_hash = QByteArray::fromBase64(match.captured("hash").toLatin1());
+	QByteArray hash = db_salt + pw;
+	for (uint i = 0; i < db_repeats; i++)
+		hash = QCryptographicHash::hash(db_salt + hash, QCryptographicHash::Sha256);
+	return (hash == db_hash);
+}
+
+
+/// macro to execute the sql to create a table
 #define CREATE_TABLE(name, sql) \
 	if (!db) \
 	{ \
@@ -18,6 +83,7 @@
 
 DefaultRequestHandler::DefaultRequestHandler(const QDir &dataDir, QObject *parent)
 	: HttpRequestHandler(parent)
+	, sessionStore(new QSettings)
 	, staticFiles(new QSettings(":/static/static.ini", QSettings::IniFormat))
 	, templates(new QSettings(":/html/html.ini", QSettings::IniFormat))
 {
@@ -61,12 +127,50 @@ bool DefaultRequestHandler::exec(const QString &query)
 
 void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response)
 {
+	HttpSession session = sessionStore.getSession(request, response);
+	bool loggedin = session.get("loggedin").toBool();
+	
 	QByteArray path = request.getPath().mid(1);
 	response.setHeader("Server", QByteArray("KFG-Intranet (QtWebApp ") + getQtWebAppLibVersion() + ")");
 	
 	if (path == "")
 	{
 		response.redirect("index");
+		return;
+	}
+	
+	if (path == "login")
+	{
+		QSqlQuery q = db->exec("SELECT password FROM admins;");
+#ifdef QT_DEBUG
+		qDebug() << q.lastQuery();
+#endif
+		if (q.lastError().isValid())
+		{
+			qCritical() << q.lastError();
+			response.setHeader("Content-Type", "text/plain; charset=utf-8");
+			response.setStatus(500, "Internal Server Error");
+			response.write(q.lastError().text().toUtf8(), true);
+			return;
+		}
+		QByteArray pw = request.getParameter("pw");
+		bool success = false;
+		while (q.next())
+		{
+			if (passwordMatch(pw, q.value("password").toByteArray()))
+			{
+				success = true;
+				break;
+			}
+		}
+		if (success)
+		{
+			session.set("loggedin", true);
+			response.redirect(request.getParameter("redir"));
+			return;
+		}
+		session.set("loggedin", false);
+		response.redirect(request.getParameter("redir") + "?wrongpw=true");
 		return;
 	}
 	
@@ -78,11 +182,32 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	
 	response.setHeader("Content-Type", "text/html; charset=utf-8");
 	Template base = templates.getTemplate("base");
-	base.setVariable("name", path);
 	if (path == "base")
 	{
 		response.setStatus(403, "Forbidden");
 		base.setVariable("body", "403 Forbidden");
+	}
+	else if (path == "newpw")
+	{
+#ifdef Q_OS_UNIX
+		if (!isatty(STDOUT_FILENO))
+		{
+			base.setVariable("body", "ERROR: The stdout of the server doesn't point to a tty.");
+		}
+		else
+#endif
+		{
+			QByteArray pw = salt(6).toBase64(QByteArray::OmitTrailingEquals);
+			if (!exec("INSERT INTO admins (password) VALUES ('" + password(pw) + "');"))
+			{
+				base.setVariable("body", "Failed to create a new password. Check the server log for details.");
+			}
+			else
+			{
+				qDebug() << "NEW PASSWORD GENERATED:" << pw << "(requested from " << request.getIP() << ")";
+				base.setVariable("body", "A new password has been printed out to stdout of the server.");
+			}
+		}
 	}
 	else
 	{
@@ -135,5 +260,8 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			}
 		}
 	}
+	base.setVariable("name", path);
+	base.setCondition("loggedin", loggedin);
+	base.setCondition("wrongpw", request.getParameter("wrongpw") == "true");
 	response.write(base.toUtf8(), true);
 }

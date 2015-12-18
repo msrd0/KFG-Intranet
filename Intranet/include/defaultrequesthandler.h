@@ -5,6 +5,7 @@
 #include <QSqlDatabase>
 
 #include <httprequesthandler.h>
+#include <httpsessionstore.h>
 #include <staticfilecontroller.h>
 #include <templatecache.h>
 
@@ -18,6 +19,7 @@ public:
     void service(HttpRequest& request, HttpResponse& response);
 
 private:
+	HttpSessionStore sessionStore;
     StaticFileController staticFiles;
     TemplateCache templates;
 
