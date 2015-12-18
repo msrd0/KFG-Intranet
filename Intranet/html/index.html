@@ -1,10 +1,11 @@
 <div class="grid">
     {loop gridrow}
+		<div class="rowtitle">{gridrow.name}</div>
         <div class="row">
-            <div>{gridrow.col0}</div>
-            <div>{gridrow.col1}</div>
-            <div>{gridrow.col2}</div>
-            <div>{gridrow.col3}</div>
+            <div class="1to1" style="background-image: {gridrow.img0};">{gridrow.col0}</div>
+            <div class="1to1" style="background-image: {gridrow.img1};">{gridrow.col1}</div>
+            <div class="1to1" style="background-image: {gridrow.img2};">{gridrow.col2}</div>
+            <div class="1to1" style="background-image: {gridrow.img3};">{gridrow.col3}</div>
         </div>
     {end gridrow}
 </div>

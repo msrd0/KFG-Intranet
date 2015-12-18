@@ -1,6 +1,10 @@
 <RCC>
-    <qresource prefix="/static">
-        <file>main.css</file>
-        <file>static.ini</file>
-    </qresource>
+	<qresource prefix="/static">
+		<file>index.css</file>
+		<file>main.css</file>
+		<file>main.js</file>
+		<file>static.ini</file>
+		
+		<file alias="jquery-2.1.4.min.js">jquery/jquery-2.1.4.min.js</file>
+	</qresource>
 </RCC>

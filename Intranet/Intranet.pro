@@ -46,4 +46,6 @@ DISTFILES += \
     html/index.html \
     html/base.html \
     static/main.css \
-    static/static.ini
+    static/static.ini \
+    static/index.css \
+	static/main.js
