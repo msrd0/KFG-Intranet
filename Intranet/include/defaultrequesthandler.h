@@ -14,6 +14,13 @@ class DefaultRequestHandler : public HttpRequestHandler
     Q_OBJECT
 
 public:
+	struct Item
+	{
+		QString name;
+		QString img;
+		QString link;
+	};
+	
     DefaultRequestHandler(const QDir &dataDir, QObject *parent = 0);
 
     void service(HttpRequest& request, HttpResponse& response);

@@ -98,8 +98,9 @@ DefaultRequestHandler::DefaultRequestHandler(const QDir &dataDir, QObject *paren
 				 "row_name TEXT UNIQUE");
 	CREATE_TABLE("items",
 				 "row INTEGER,"
-				 "item_name TEXT UNIQUE,"
+				 "item_name TEXT NOT NULL UNIQUE,"
 				 "item_img TEXT,"
+				 "item_link TEXT NOT NULL,"
 				 "FOREIGN KEY(row) REFERENCES rows(id)");
 	CREATE_TABLE("news",
 				 "text TEXT,"
@@ -230,14 +231,14 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			}
 			else
 			{
-				QList<QPair<QString, QList<QPair<QString, QString> > > > l;
+				QList<QPair<QString, QList<Item> > > l;
 				while (items.next())
 				{
 					int row = items.value("row").toInt();
 					while (l.size() <= row)
-						l.append(qMakePair(QString(), QList<QPair<QString, QString> >()));
+						l.append(qMakePair(QString(), QList<Item>()));
 					l[row].first = items.value("row_name").toString();
-					l[row].second << qMakePair(items.value("item_name").toString(), items.value("item_img").toString());
+					l[row].second << Item{items.value("item_name").toString(), items.value("item_img").toString(), items.value("item_link").toString()};
 				}
 				t.loop("gridrow", l.size());
 				for (auto a : l)
@@ -246,13 +247,15 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 					int i;
 					for (i = 0; i < a.second.size(); i++)
 					{
-						t.setVariable("gridrow0.col" + QString::number(i), a.second[i].first);
-						t.setVariable("gridrow0.img" + QString::number(i), a.second[i].second.isEmpty() ? "none" : "url(" + a.second[i].second + ")");
+						t.setVariable("gridrow0.col"  + QString::number(i), a.second[i].name);
+						t.setVariable("gridrow0.img"  + QString::number(i), a.second[i].img.isEmpty() ? "none" : "url(" + a.second[i].img + ")");
+						t.setVariable("gridrow0.link" + QString::number(i), a.second[i].link);
 					}
 					for (; i < 4; i++)
 					{
-						t.setVariable("gridrow0.col" + QString::number(i), QString());
-						t.setVariable("gridrow0.img" + QString::number(i), "none");
+						t.setVariable("gridrow0.col"  + QString::number(i), QString());
+						t.setVariable("gridrow0.img"  + QString::number(i), "none");
+						t.setVariable("gridrow0.link" + QString::number(i), "#");
 					}
 				}
 				

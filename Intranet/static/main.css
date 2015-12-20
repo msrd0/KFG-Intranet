@@ -2,8 +2,25 @@ body {
     font-family: sans-serif;
     margin: 20px 20%;
 }
+@media screen and (max-width: 900px) {
+	body {
+		margin: 20px;
+	}
+}
+@media screen and (max-width: 1200px) and (min-width: 900px) {
+	body {
+		margin: 20px 10%;
+	}
+}
+@media screen and (min-width: 1500px) {
+	body {
+		margin: 20px 25%;
+	}
+}
 #content {
     width: 100%;
+	min-width: 780px;
+	max-width: 900px;
 }
 h1 {
     text-align: center;

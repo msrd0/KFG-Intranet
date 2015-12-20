@@ -7,15 +7,20 @@
 	padding-left: 0;
 }
 
-.row div {
+.row .item {
+	width: 25%;
+	margin: 5px;
+	text-align: center;
+	color: black;
+	text-decoration: none;
+}
+
+.row .item div {
 	background-color: #FF914A;
 	background-size: 80% 80%;
 	background-position: 50% 90%;
 	background-repeat: no-repeat;
-	width: 25%;
-	margin: 5px;
 	padding: 5px;
-	text-align: center;
 }
 
 .rowtitle {

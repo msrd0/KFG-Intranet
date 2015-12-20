@@ -2,10 +2,26 @@
     {loop gridrow}
 		<div class="rowtitle">{gridrow.name}</div>
         <div class="row">
-            <div class="1to1" style="background-image: {gridrow.img0};">{gridrow.col0}</div>
-            <div class="1to1" style="background-image: {gridrow.img1};">{gridrow.col1}</div>
-            <div class="1to1" style="background-image: {gridrow.img2};">{gridrow.col2}</div>
-            <div class="1to1" style="background-image: {gridrow.img3};">{gridrow.col3}</div>
+			<a class="item" href="{gridrow.link0}">
+				<div class="1to1" style="background-image: {gridrow.img0};">
+					{gridrow.col0}
+				</div>
+			</a>
+			<a class="item" href="{gridrow.link1}">
+				<div class="1to1" style="background-image: {gridrow.img1};">
+					{gridrow.col1}
+				</div>
+			</a>
+			<a class="item" href="{gridrow.link2}">
+				<div class="1to1" style="background-image: {gridrow.img2};">
+					{gridrow.col2}
+				</div>
+			</a>
+			<a class="item" href="{gridrow.link3}">
+				<div class="1to1" style="background-image: {gridrow.img3};">
+					{gridrow.col3}
+				</div>
+			</a>
         </div>
     {end gridrow}
 </div>
