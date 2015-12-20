@@ -12,6 +12,7 @@
 #include <QRegularExpression>
 #include <QSqlError>
 #include <QSqlQuery>
+#include <QUrl>
 
 #ifndef PASSWORD_SALT_LENGTH
 #  define PASSWORD_SALT_LENGTH 32
@@ -233,8 +234,8 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		QSqlQuery q(*db);
 		if (!q.exec("UPDATE items SET "
 					"item_name='" + request.getParameter("name").replace("'", "''") + "'," +
-					"item_link='" + request.getParameter("link").replace("'", "''") + "'," +
-					(changeimg ? "item_img='data:image/png;base64," + imagedata.toBase64(QByteArray::KeepTrailingEquals) + "'" : "") +
+					"item_link='" + request.getParameter("link").replace("'", "''") + "'" +
+					(changeimg ? ",item_img='" + imagedata.toBase64(QByteArray::KeepTrailingEquals) + "'" : "") +
 					" WHERE item_name='" + request.getParameter("item").replace("'", "''") + "';"))
 		{
 			qDebug() << q.lastQuery();
@@ -245,6 +246,26 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			return;
 		}
 		response.redirect("/administration");
+		return;
+	}
+	
+	if (path.startsWith("itemimage/"))
+	{
+		QSqlQuery q(*db);
+		if (!q.exec("SELECT item_img FROM items WHERE item_name='" + path.mid(10).replace("'", "''") + "';") || !q.first())
+		{
+			qDebug() << q.lastQuery();
+			qCritical() << q.lastError();
+			response.setHeader("Content-Type", "text/plain; charset=utf-8");
+			response.setStatus(500, "Internal Server Error");
+			response.write(q.lastError().text().toUtf8(), true);
+			return;
+		}
+		response.setHeader("Content-Type", "image/png");
+#ifndef QT_DEBUG
+		response.setHeader("Cache-Control", "max-age: 60");
+#endif
+		response.write(QByteArray::fromBase64(q.value(0).toByteArray()), true);
 		return;
 	}
 	
@@ -316,7 +337,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 					while (l.size() <= row)
 						l.append(qMakePair(QString(), QList<Item>()));
 					l[row].first = items.value("row_name").toString();
-					l[row].second << Item{items.value("item_name").toString(), items.value("item_img").toString(), items.value("item_link").toString()};
+					l[row].second << Item{items.value("item_name").toString(), "/itemimage/" + QUrl::toPercentEncoding(items.value("item_name").toByteArray()), items.value("item_link").toString()};
 				}
 				t.loop("gridrow", l.size());
 				for (int i = 0; i < l.size(); i++)
