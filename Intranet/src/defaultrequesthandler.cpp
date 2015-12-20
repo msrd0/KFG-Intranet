@@ -220,7 +220,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		}
 		else
 		{
-			QSqlQuery items = db->exec("SELECT * FROM items INNER JOIN rows ORDER BY row;");
+			QSqlQuery items = db->exec("SELECT * FROM items INNER JOIN rows ON row=rows.id ORDER BY row;");
 #ifdef QT_DEBUG
 			qDebug() << items.lastQuery();
 #endif
@@ -241,21 +241,22 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 					l[row].second << Item{items.value("item_name").toString(), items.value("item_img").toString(), items.value("item_link").toString()};
 				}
 				t.loop("gridrow", l.size());
-				for (auto a : l)
+				for (int i = 0; i < l.size(); i++)
 				{
-					t.setVariable("gridrow0.name", a.first);
-					int i;
-					for (i = 0; i < a.second.size(); i++)
+					auto &a = l[i];
+					t.setVariable("gridrow" + QString::number(i) + ".name", a.first);
+					int j;
+					for (j = 0; j < a.second.size(); j++)
 					{
-						t.setVariable("gridrow0.col"  + QString::number(i), a.second[i].name);
-						t.setVariable("gridrow0.img"  + QString::number(i), a.second[i].img.isEmpty() ? "none" : "url(" + a.second[i].img + ")");
-						t.setVariable("gridrow0.link" + QString::number(i), a.second[i].link);
+						t.setVariable("gridrow" + QString::number(i) + ".col"  + QString::number(j), a.second[j].name);
+						t.setVariable("gridrow" + QString::number(i) + ".img"  + QString::number(j), a.second[j].img.isEmpty() ? "none" : "url(" + a.second[j].img + ")");
+						t.setVariable("gridrow" + QString::number(i) + ".link" + QString::number(j), a.second[j].link);
 					}
-					for (; i < 4; i++)
+					for (; j < 4; j++)
 					{
-						t.setVariable("gridrow0.col"  + QString::number(i), QString());
-						t.setVariable("gridrow0.img"  + QString::number(i), "none");
-						t.setVariable("gridrow0.link" + QString::number(i), "#");
+						t.setVariable("gridrow" + QString::number(i) + ".col"  + QString::number(j), QString());
+						t.setVariable("gridrow" + QString::number(i) + ".img"  + QString::number(j), "none");
+						t.setVariable("gridrow" + QString::number(i) + ".link" + QString::number(j), "#");
 					}
 				}
 				
