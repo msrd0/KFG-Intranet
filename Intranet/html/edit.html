@@ -1,0 +1,24 @@
+{if loggedin}
+
+<h3>Eintrag bearbeiten</h3>
+
+<form class="row" action="/edititem" method="POST" enctype="multipart/form-data">
+	<input type="hidden" name="row" value="{param-row}">
+	<input type="hidden" name="col" value="{param-col}">
+	<input type="hidden" name="item" value="{param-item}">
+	<div class="item">
+		<div class="1to1" style="background-image: {gridrow{param-row}.img{param-col}};">
+			<input type="text" name="name" value="{gridrow{param-row}.col{param-col}}">
+		</div>
+	</div>
+	<div class="edititem">
+		<div>Link: <input type="text" name="link" value="{gridrow{param-row}.link{param-col}}"></div>
+		<div>Bild: <input type="file" name="img"></div>
+		<!-- keep those values in sync with /edititem -->
+		<div><input type="submit" name="action" value="edit"><input type="submit" name="action" value="delete"></div>
+	</div>
+</form>
+
+{else loggedin}
+Du musst angemeldet sein, um diese Seite zu sehen. <a href="/administration">Anmelden</a>
+{end loggedin}

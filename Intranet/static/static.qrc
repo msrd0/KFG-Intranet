@@ -1,6 +1,7 @@
 <RCC>
 	<qresource prefix="/static">
 		<file>administration.css</file>
+		<file>edit.css</file>
 		<file>index.css</file>
 		<file>main.css</file>
 		<file>main.js</file>

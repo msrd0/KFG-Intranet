@@ -6,7 +6,9 @@
 #  warning Some functions might not be available on non-unix platforms
 #endif
 
+#include <QBuffer>
 #include <QCryptographicHash>
+#include <QImage>
 #include <QRegularExpression>
 #include <QSqlError>
 #include <QSqlQuery>
@@ -132,11 +134,12 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	bool loggedin = session.get("loggedin").toBool();
 	
 	QByteArray path = request.getPath().mid(1);
+	qDebug() << request.getIP() << request.getMethod() << path << request.getVersion();
 	response.setHeader("Server", QByteArray("KFG-Intranet (QtWebApp ") + getQtWebAppLibVersion() + ")");
 	
 	if (path == "")
 	{
-		response.redirect("index");
+		response.redirect("/index");
 		return;
 	}
 	
@@ -172,6 +175,76 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		}
 		session.set("loggedin", false);
 		response.redirect(request.getParameter("redir") + "?wrongpw=true");
+		return;
+	}
+	
+	if (path == "edititem")
+	{
+		if (!loggedin || QString::compare(request.getMethod(), "post", Qt::CaseInsensitive) != 0)
+		{
+			response.redirect("/administration");
+			return;
+		}
+		
+		if (request.getParameter("item").isEmpty())
+		{
+			response.write("<html><body>"
+						   "<p>ERROR: No item specified. This probably happens because you were trying to add an "
+						   "item by editing a non-existing item. <a href=\"/administration\">back</a></p>"
+						   "</body></html>", true);
+			return;
+		}
+		
+		QByteArray action = request.getParameter("action");
+		if (action == "delete")
+		{
+			QSqlQuery q(*db);
+			if (!q.exec("DELETE FROM items WHERE item_name='" + request.getParameter("item").replace("'", "''") + "';"))
+			{
+				qCritical() << q.lastError();
+				response.setHeader("Content-Type", "text/plain; charset=utf-8");
+				response.setStatus(500, "Internal Server Error");
+				response.write(q.lastError().text().toUtf8(), true);
+				return;
+			}
+#ifdef QT_DEBUG
+			qDebug() << q.lastQuery();
+#endif
+			response.redirect("/administration");
+			return;
+		}
+		
+		QTemporaryFile *img = request.getUploadedFile("img");
+		bool changeimg = img && !request.getParameter("img").isEmpty();
+		QImage image;
+		QByteArray imagedata;
+		if (changeimg)
+		{
+			if (!image.load(img, 0))
+				changeimg = false;
+			else
+			{
+				image = image.scaled(256, 256, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+				QBuffer buf(&imagedata);
+				buf.open(QIODevice::WriteOnly);
+				image.save(&buf, "PNG");
+			}
+		}
+		QSqlQuery q(*db);
+		if (!q.exec("UPDATE items SET "
+					"item_name='" + request.getParameter("name").replace("'", "''") + "'," +
+					"item_link='" + request.getParameter("link").replace("'", "''") + "'," +
+					(changeimg ? "item_img='data:image/png;base64," + imagedata.toBase64(QByteArray::KeepTrailingEquals) + "'" : "") +
+					" WHERE item_name='" + request.getParameter("item").replace("'", "''") + "';"))
+		{
+			qDebug() << q.lastQuery();
+			qCritical() << q.lastError();
+			response.setHeader("Content-Type", "text/plain; charset=utf-8");
+			response.setStatus(500, "Internal Server Error");
+			response.write(q.lastError().text().toUtf8(), true);
+			return;
+		}
+		response.redirect("/administration");
 		return;
 	}
 	
@@ -220,6 +293,11 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		}
 		else
 		{
+			// redirect parameters
+			for (auto key : request.getParameterMap().keys())
+				t.setVariable("param-" + key, request.getParameter(key));
+			t.setCondition("wrongpw", request.getParameter("wrongpw") == "true");
+			
 			QSqlQuery items = db->exec("SELECT * FROM items INNER JOIN rows ON row=rows.id ORDER BY row;");
 #ifdef QT_DEBUG
 			qDebug() << items.lastQuery();
@@ -245,6 +323,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 				{
 					auto &a = l[i];
 					t.setVariable("gridrow" + QString::number(i) + ".name", a.first);
+					t.setVariable("gridrow" + QString::number(i) + ".id", QString::number(i));
 					int j;
 					for (j = 0; j < a.second.size(); j++)
 					{
@@ -266,6 +345,5 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	}
 	base.setVariable("name", path);
 	base.setCondition("loggedin", loggedin);
-	base.setCondition("wrongpw", request.getParameter("wrongpw") == "true");
 	response.write(base.toUtf8(), true);
 }

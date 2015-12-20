@@ -1,5 +1,4 @@
-QT += core network sql
-QT -= gui
+QT += core network sql gui
 
 TEMPLATE = app
 TARGET = intranet
@@ -41,7 +40,7 @@ RESOURCES += \
     html/html.qrc \
     static/static.qrc
 
-DISTFILES += \
+DISTFILES += config.ini \
     html/html.ini \
     html/index.html \
     html/base.html \
@@ -50,4 +49,6 @@ DISTFILES += \
     static/index.css \
 	static/main.js \
     html/administration.html \
-    static/administration.css
+    static/administration.css \
+    html/edit.html \
+    static/edit.css
