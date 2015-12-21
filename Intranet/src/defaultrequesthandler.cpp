@@ -346,7 +346,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		}
 		response.setHeader("Content-Type", "image/png");
 #ifndef QT_DEBUG
-		response.setHeader("Cache-Control", "max-age: 60");
+		response.setHeader("Cache-Control", "max-age=600");
 #endif
 		response.write(QByteArray::fromBase64(q.value(0).toByteArray()), true);
 		return;
