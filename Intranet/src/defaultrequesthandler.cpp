@@ -422,6 +422,15 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 					l[row].first = items.value("row_name").toString();
 					l[row].second << Item{items.value("item_name").toString(), "/itemimage/" + QUrl::toPercentEncoding(items.value("item_name").toByteArray()), items.value("item_link").toString()};
 				}
+				
+				for (int i = 0; i < l.size();)
+				{
+					if (l[i].second.isEmpty())
+						l.removeAt(i);
+					else
+						i++;
+				}
+				
 				t.loop("gridrow", l.size());
 				for (int i = 0; i < l.size(); i++)
 				{
