@@ -8,6 +8,7 @@
 
 #include <QBuffer>
 #include <QCryptographicHash>
+#include <QDate>
 #include <QImage>
 #include <QRegularExpression>
 #include <QSqlError>
@@ -94,8 +95,9 @@ DefaultRequestHandler::DefaultRequestHandler(const QDir &dataDir, QObject *paren
 	db->setDatabaseName(dataDir.absoluteFilePath("db-v1")); // may increase db version in future
 	if (!db->open())
 		db = 0;
+	db->exec("PRAGMA foreign_keys = ON;");
 	CREATE_TABLE("admins",
-				 "password TEXT");
+				 "password TEXT NOT NULL");
 	CREATE_TABLE("rows",
 				 "id INTEGER PRIMARY KEY UNIQUE,"
 				 "row_name TEXT UNIQUE");
@@ -106,8 +108,8 @@ DefaultRequestHandler::DefaultRequestHandler(const QDir &dataDir, QObject *paren
 				 "item_link TEXT NOT NULL,"
 				 "FOREIGN KEY(row) REFERENCES rows(id)");
 	CREATE_TABLE("news",
-				 "text TEXT,"
-				 "edited DATETIME");
+				 "text TEXT NOT NULL,"
+				 "edited DATETIME NOT NULL");
 }
 
 bool DefaultRequestHandler::exec(const QString &query)
@@ -249,6 +251,31 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		return;
 	}
 	
+	if (path == "addnews")
+	{
+		if (!loggedin || QString::compare(request.getMethod(), "post", Qt::CaseInsensitive) != 0)
+		{
+			response.redirect("/administration");
+			return;
+		}
+		
+		QSqlQuery q(*db);
+		if (!q.exec("INSERT INTO news (text, edited) VALUES ('" + request.getParameter("text").replace("'", "''") + "', " + QString::number(QDateTime::currentMSecsSinceEpoch()) + ");"))
+		{
+			qDebug() << q.lastQuery();
+			qCritical() << q.lastError();
+			response.setHeader("Content-Type", "text/plain; charset=utf-8");
+			response.setStatus(500, "Internal Server Error");
+			response.write(q.lastError().text().toUtf8(), true);
+			return;
+		}
+#ifdef QT_DEBUG
+		qDebug() << q.lastQuery();
+#endif
+		response.redirect(request.getParameter("redir"));
+		return;
+	}
+	
 	if (path.startsWith("itemimage/"))
 	{
 		QSqlQuery q(*db);
@@ -364,6 +391,32 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			}
 		}
 	}
+	
+	QSqlQuery news = db->exec("SELECT * FROM news ORDER BY edited DESC LIMIT 5;");
+#ifdef QT_DEBUG
+	qDebug() << news.lastQuery();
+#endif
+	if (news.lastError().isValid())
+	{
+		qCritical() << news.lastError();
+		base.loop("news", 1);
+		base.setVariable("news0.text", news.lastError().text());
+		base.setVariable("news0.edited", "SERVER ERROR");
+	}
+	else
+	{
+		int size = news.last() ? news.at()+1 : 0;
+		if (!news.first())
+			size = 0;
+		base.loop("news", size);
+		for (int i = 0; (i==0 || news.next()) && i<size; i++)
+		{
+			qDebug() << i;
+			base.setVariable("news" + QString::number(i) + ".text", news.value("text").toString());
+			base.setVariable("news" + QString::number(i) + ".edited", QDateTime::fromMSecsSinceEpoch(news.value("edited").toLongLong()).date().toString("ddd, dd. MMMM yyyy"));
+		}
+	}
+	
 	base.setVariable("name", path);
 	base.setCondition("loggedin", loggedin);
 	response.write(base.toUtf8(), true);

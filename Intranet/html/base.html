@@ -31,14 +31,19 @@
     </div>
     <div id="news" style="width: 30%;">
         <h3>News</h3>
-        <div class="entry">
-            <p>Hier stehen tolle Nachrichten.</p>
-            <div class="date">7. Dezember 2015</div>
-        </div>
-        <div class="entry">
-            <p>Und hier stehen ältere Nachrichten.</p>
-            <div class="date">6. Dezember 2015</div>
-        </div>
+		{if loggedin}
+			<form class="entry" action="/addnews" method="POST" enctype="multipart/form-data">
+				<input type="hidden" name="redir" value="/{name}">
+				<textarea name="text" style="width: 95%" rows=5 placeholder="News hinzufügen"></textarea>
+				<input type="submit" value="Hinzufügen">
+			</form>
+		{end loggedin}
+		{loop news}
+			<div class="entry">
+				<p>{news.text}</p>
+				<div class="date">{news.edited}</div>
+			</div>
+        {end news}
     </div>
 </div>
 
