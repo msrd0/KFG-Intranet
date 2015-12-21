@@ -251,6 +251,62 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		return;
 	}
 	
+	if (path == "additem")
+	{
+		if (!loggedin || QString::compare(request.getMethod(), "post", Qt::CaseInsensitive) != 0)
+		{
+			response.redirect("/administration");
+			return;
+		}
+		
+		QByteArray row = request.getParameter("row");
+		if (row == "new")
+		{
+			QSqlQuery q(*db);
+			if (!q.exec("INSERT INTO rows (row_name) VALUES ('" + request.getParameter("rowname").replace("'", "''") + "');"))
+			{
+				qDebug() << q.lastQuery();
+				qCritical() << q.lastError();
+				response.setHeader("Content-Type", "text/plain; charset=utf-8");
+				response.setStatus(500, "Internal Server Error");
+				response.write(q.lastError().text().toUtf8(), true);
+				return;
+			}
+	#ifdef QT_DEBUG
+			qDebug() << q.lastQuery();
+	#endif
+			if (!q.exec("SELECT id FROM rows WHERE row_name='" + request.getParameter("rowname").replace("'", "''") + "';") || !q.first())
+			{
+				qDebug() << q.lastQuery();
+				qCritical() << q.lastError();
+				response.setHeader("Content-Type", "text/plain; charset=utf-8");
+				response.setStatus(500, "Internal Server Error");
+				response.write(q.lastError().text().toUtf8(), true);
+				return;
+			}
+	#ifdef QT_DEBUG
+			qDebug() << q.lastQuery();
+	#endif
+			row = q.value("id").toByteArray();
+		}
+		
+		QSqlQuery q(*db);
+		if (!q.exec("INSERT INTO items (row, item_name, item_link) VALUES (" + row + ", '" + request.getParameter("name").replace("'", "''") + "', '" + request.getParameter("link").replace("'", "''") + "');"))
+		{
+			qDebug() << q.lastQuery();
+			qCritical() << q.lastError();
+			response.setHeader("Content-Type", "text/plain; charset=utf-8");
+			response.setStatus(500, "Internal Server Error");
+			response.write(q.lastError().text().toUtf8(), true);
+			return;
+		}
+#ifdef QT_DEBUG
+		qDebug() << q.lastQuery();
+#endif
+		response.redirect("/administration");
+		return;
+	}
+	
 	if (path == "addnews")
 	{
 		if (!loggedin || QString::compare(request.getMethod(), "post", Qt::CaseInsensitive) != 0)

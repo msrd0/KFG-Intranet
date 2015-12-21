@@ -1,5 +1,6 @@
 {if loggedin}
 
+<h3>Einträge bearbeiten</h3>
 <div class="grid">
     {loop gridrow}
 		<div class="rowtitle">{gridrow.name}</div>
@@ -27,6 +28,38 @@
         </div>
     {end gridrow}
 </div>
+
+<h3>Neuer Eintrag</h3>
+<form class="row" action="/additem" method="POST" enctype="multipart/form-data">
+	<div class="item">
+		<div class="1to1">
+			<input type="text" name="name" placeholder="Name">
+		</div>
+	</div>
+	<div class="edititem">
+		<div>
+			Link:
+			<input type="text" name="link" value="https://">
+		</div>
+		<div>
+			Reihe:
+			<select id="form_row" name="row">
+				<option id="form_rownew" value="new">Neue Reihe</option>
+				{loop gridrow}
+					<option value="{gridrow.id}">{gridrow.name}</option>
+				{end gridrow}
+			</select>
+			<input id="form_rowname" type="text" name="rowname" placeholder="Name der Reihe">
+		</div>
+		<div><input type="submit" value="Hinzufügen"></div>
+	</div>
+</form>
+
+<script type="text/javascript">
+$("#form_row").change(function() {
+	$("#form_rowname").attr("disabled", !$("#form_rownew").prop("selected"));
+});
+</script>
 
 {else loggedin}
 
