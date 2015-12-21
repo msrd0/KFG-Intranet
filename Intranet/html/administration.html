@@ -5,22 +5,22 @@
     {loop gridrow}
 		<div class="rowtitle">{gridrow.name}</div>
         <div class="row">
-			<a class="item" href="/edit?row={gridrow.index}&col=0&item={gridrow.col0}">
+			<a class="item" href="{prepend}edit?row={gridrow.index}&col=0&item={gridrow.col0}">
 				<div class="1to1" style="background-image: {gridrow.img0};">
 					{gridrow.col0}
 				</div>
 			</a>
-			<a class="item" href="/edit?row={gridrow.index}&col=1&item={gridrow.col1}">
+			<a class="item" href="{prepend}edit?row={gridrow.index}&col=1&item={gridrow.col1}">
 				<div class="1to1" style="background-image: {gridrow.img1};">
 					{gridrow.col1}
 				</div>
 			</a>
-			<a class="item" href="/edit?row={gridrow.index}&col=2&item={gridrow.col2}">
+			<a class="item" href="{prepend}edit?row={gridrow.index}&col=2&item={gridrow.col2}">
 				<div class="1to1" style="background-image: {gridrow.img2};">
 					{gridrow.col2}
 				</div>
 			</a>
-			<a class="item" href="/edit?row={gridrow.index}&col=3&item={gridrow.col3}">
+			<a class="item" href="{prepend}edit?row={gridrow.index}&col=3&item={gridrow.col3}">
 				<div class="1to1" style="background-image: {gridrow.img3};">
 					{gridrow.col3}
 				</div>
@@ -30,7 +30,7 @@
 </div>
 
 <h3>Neuer Eintrag</h3>
-<form class="row" action="/additem" method="POST" enctype="multipart/form-data">
+<form class="row" action="{prepend}additem" method="POST" enctype="multipart/form-data">
 	<div class="item">
 		<div class="1to1">
 			<input type="text" name="name" placeholder="Name">
@@ -69,8 +69,8 @@ $("#form_row").change(function() {
 <p>Um das Intranet zu verwalten wird ein Passwort benötigt.</p>
 {end wrongpw}
 
-<form action="/login" method="POST">
-	<input type="hidden" name="redir" value="/{name}">
+<form action="{prepend}login" method="POST">
+	<input type="hidden" name="redir" value="{prepend}{name}">
 	Passwort: <input type="password" name="pw">
 	<input type="submit" value="Anmelden">
 </form>
@@ -80,6 +80,6 @@ $("#form_row").change(function() {
 <p>Wenn du kein Passwort hast oder es vergessen hast, kannst du hier ein neues
 Passwort anfordern. Dieses Passwort wird vom Server ausgegeben, d.h. ohne
 Zugang zum Server ist es nicht möglich, das Passwort zu benutzen.</p>
-<a href="/newpw"><button>Neues Passwort</button></a>
+<a href="{prepend}newpw"><button>Neues Passwort</button></a>
 
 {end loggedin}

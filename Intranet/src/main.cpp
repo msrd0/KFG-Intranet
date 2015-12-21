@@ -49,7 +49,15 @@ int main(int argc, char *argv[])
                                   #endif
                                       , QSettings::IniFormat);
     qDebug() << "Using config file " << config->fileName();
-    new HttpListener(config, new DefaultRequestHandler(dataDir));
+	QByteArray prepend = "/";
+	if (config->contains("prepend"))
+		prepend = config->value("prepend").toByteArray();
+	if (!prepend.startsWith("/"))
+	{
+		qCritical() << "The prepend option doesn't start with a /";
+		return 1;
+	}
+    new HttpListener(config, new DefaultRequestHandler(dataDir, prepend));
 
     return app.exec();
 }

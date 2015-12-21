@@ -85,8 +85,9 @@ bool passwordMatch(const QByteArray &pw, const QByteArray &db)
 		db = 0; \
 	}
 
-DefaultRequestHandler::DefaultRequestHandler(const QDir &dataDir, QObject *parent)
+DefaultRequestHandler::DefaultRequestHandler(const QDir &dataDir, const QByteArray &prep, QObject *parent)
 	: HttpRequestHandler(parent)
+	, prepend(prep.endsWith('/') ? prep : prep+"/")
 	, sessionStore(new QSettings)
 	, staticFiles(new QSettings(":/static/static.ini", QSettings::IniFormat))
 	, templates(new QSettings(":/html/html.ini", QSettings::IniFormat))
@@ -142,7 +143,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	
 	if (path == "")
 	{
-		response.redirect("/index");
+		response.redirect(prepend + "index");
 		return;
 	}
 	
@@ -193,7 +194,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		{
 			response.write("<html><body>"
 						   "<p>ERROR: No item specified. This probably happens because you were trying to add an "
-						   "item by editing a non-existing item. <a href=\"/administration\">back</a></p>"
+						   "item by editing a non-existing item. <a href=\"" + prepend + "administration\">back</a></p>"
 						   "</body></html>", true);
 			return;
 		}
@@ -213,7 +214,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 #ifdef QT_DEBUG
 			qDebug() << q.lastQuery();
 #endif
-			response.redirect("/administration");
+			response.redirect(prepend + "administration");
 			return;
 		}
 		
@@ -247,7 +248,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			response.write(q.lastError().text().toUtf8(), true);
 			return;
 		}
-		response.redirect("/administration");
+		response.redirect(prepend + "administration");
 		return;
 	}
 	
@@ -255,7 +256,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	{
 		if (!loggedin || QString::compare(request.getMethod(), "post", Qt::CaseInsensitive) != 0)
 		{
-			response.redirect("/administration");
+			response.redirect(prepend + "administration");
 			return;
 		}
 		
@@ -303,7 +304,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 #ifdef QT_DEBUG
 		qDebug() << q.lastQuery();
 #endif
-		response.redirect("/administration");
+		response.redirect(prepend + "administration");
 		return;
 	}
 	
@@ -311,7 +312,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	{
 		if (!loggedin || QString::compare(request.getMethod(), "post", Qt::CaseInsensitive) != 0)
 		{
-			response.redirect("/administration");
+			response.redirect(prepend + "administration");
 			return;
 		}
 		
@@ -484,6 +485,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	}
 	
 	base.setVariable("name", path);
+	base.setVariable("prepend", prepend);
 	base.setCondition("loggedin", loggedin);
 	response.write(base.toUtf8(), true);
 }
