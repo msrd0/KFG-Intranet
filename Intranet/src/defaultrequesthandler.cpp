@@ -413,13 +413,13 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			}
 			else
 			{
-				QList<QPair<QString, QList<Item> > > l;
+				QList<QPair<QPair<int, QString>, QList<Item> > > l;
 				while (items.next())
 				{
 					int row = items.value("row").toInt();
 					while (l.size() <= row)
 						l.append(qMakePair(QString(), QList<Item>()));
-					l[row].first = items.value("row_name").toString();
+					l[row].first = qMakePair(row, items.value("row_name").toString());
 					l[row].second << Item{items.value("item_name").toString(), "/itemimage/" + QUrl::toPercentEncoding(items.value("item_name").toByteArray()), items.value("item_link").toString()};
 				}
 				
@@ -435,8 +435,8 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 				for (int i = 0; i < l.size(); i++)
 				{
 					auto &a = l[i];
-					t.setVariable("gridrow" + QString::number(i) + ".name", a.first);
-					t.setVariable("gridrow" + QString::number(i) + ".id", QString::number(i));
+					t.setVariable("gridrow" + QString::number(i) + ".name", a.first.second);
+					t.setVariable("gridrow" + QString::number(i) + ".id", QString::number(a.first.first));
 					int j;
 					for (j = 0; j < a.second.size(); j++)
 					{
