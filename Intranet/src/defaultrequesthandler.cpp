@@ -436,6 +436,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 				{
 					auto &a = l[i];
 					t.setVariable("gridrow" + QString::number(i) + ".name", a.first.second);
+					t.setVariable("gridrow" + QString::number(i) + ".index", QString::number(i));
 					t.setVariable("gridrow" + QString::number(i) + ".id", QString::number(a.first.first));
 					int j;
 					for (j = 0; j < a.second.size(); j++)
