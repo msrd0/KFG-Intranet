@@ -418,7 +418,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 				{
 					int row = items.value("row").toInt();
 					while (l.size() <= row)
-						l.append(qMakePair(QString(), QList<Item>()));
+						l.append(qMakePair(QPair<int, QString>(), QList<Item>()));
 					l[row].first = qMakePair(row, items.value("row_name").toString());
 					l[row].second << Item{items.value("item_name").toString(), "/itemimage/" + QUrl::toPercentEncoding(items.value("item_name").toByteArray()), items.value("item_link").toString()};
 				}
