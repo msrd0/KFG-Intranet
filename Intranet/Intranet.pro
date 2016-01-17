@@ -39,7 +39,8 @@ HEADERS += \
 RESOURCES += \
     html/html.qrc \
     static/static.qrc \
-    conf/conf.qrc
+    conf/conf.qrc \
+    img/img.qrc
 
 DISTFILES += config.ini \
     conf/html.ini \

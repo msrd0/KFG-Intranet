@@ -313,20 +313,25 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			row = q.value("id").toByteArray();
 		}
 		
+		QFile defImg(":/img/noimg.png");
+		defImg.open(QIODevice::ReadOnly);
 		QSqlQuery q(*db);
-		if (!q.exec("INSERT INTO items (row, item_name, item_link) VALUES (" + row + ", '" + request.getParameter("name").replace("'", "''") + "', '" + request.getParameter("link").replace("'", "''") + "');"))
+		if (!q.exec("INSERT INTO items (row, item_name, item_link, item_img) VALUES (" + row + ", '" + request.getParameter("name").replace("'", "''") + "', '" + request.getParameter("link").replace("'", "''") + "', '"
+					+ defImg.readAll().toBase64(QByteArray::KeepTrailingEquals) + "');"))
 		{
 			qDebug() << q.lastQuery();
 			qCritical() << q.lastError();
 			response.setHeader("Content-Type", "text/plain; charset=utf-8");
 			response.setStatus(500, "Internal Server Error");
 			response.write(q.lastError().text().toUtf8(), true);
+			defImg.close();
 			return;
 		}
 #ifdef QT_DEBUG
 		qDebug() << q.lastQuery();
 #endif
 		response.redirect(prepend + "administration");
+		defImg.close();
 		return;
 	}
 	
