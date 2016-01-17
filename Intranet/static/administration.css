@@ -8,3 +8,9 @@ hr {
 	width: 90%;
 	margin: 30px 0;
 }
+
+.pwchangelbl {
+	display: inline-block;
+	width: 200px;
+	text-align: right;
+}

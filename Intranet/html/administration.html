@@ -61,6 +61,16 @@ $("#form_row").change(function() {
 });
 </script>
 
+<h3>Account</h3>
+<a href="{prepend}logout"><button>Abmelden</button></a>
+<form action="{prepend}changepw" method="POST" enctype="multipart/form-data">
+	<h5>Passwort ändern</h5>
+	<div><span class="pwchangelbl">Altes Passwort:      </span> <input type="password" name="oldpw"></div>
+	<div><span class="pwchangelbl">Neues Passwort:      </span> <input type="password" name="newpw"></div>
+	<div><span class="pwchangelbl">Passwort wiederholen:</span> <input type="password" name="pwwdh"></div>
+	<input type="submit" value="Ändern">
+</form>
+
 {else loggedin}
 
 {if wrongpw}

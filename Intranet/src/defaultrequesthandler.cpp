@@ -141,6 +141,21 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	qDebug() << request.getIP() << request.getMethod() << path << request.getVersion();
 	response.setHeader("Server", QByteArray("KFG-Intranet (QtWebApp ") + getQtWebAppLibVersion() + ")");
 	
+	if (!db)
+	{
+		response.setStatus(500, "Internal Server Error");
+		Template base = templates.getTemplate("base");
+		QByteArray err = "ERROR: Failed to load the database!!!";
+		if (base.isEmpty())
+			response.write("<html><body><p>" + err + "</p></body></html>", true);
+		else
+		{
+			base.setVariable("body", err);
+			response.write(base.toUtf8(), true);
+		}
+		return;
+	}
+	
 	if (path == "")
 	{
 		response.redirect(prepend + "index");
@@ -179,6 +194,13 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		}
 		session.set("loggedin", false);
 		response.redirect(request.getParameter("redir") + "?wrongpw=true");
+		return;
+	}
+	
+	if (path == "logout")
+	{
+		session.set("loggedin", false);
+		response.redirect(prepend + "index");
 		return;
 	}
 	
@@ -384,7 +406,55 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			else
 			{
 				qDebug() << "NEW PASSWORD GENERATED:" << pw << "(requested from " << request.getIP() << ")";
-				base.setVariable("body", "A new password has been printed out to stdout of the server.");
+				base.setVariable("body", "<p>A new password has been printed out to stdout of the server. <a href=\"" + prepend + "administration\">back</a></p>");
+			}
+		}
+	}
+	else if (path == "changepw")
+	{
+		if (QString::compare(request.getMethod(), "post", Qt::CaseInsensitive) != 0)
+			base.setVariable("body", "<p>You might only change a password with a POST request. <a href=\"" + prepend + "administration\">back</a></p>"
+							 "<p>Your request type: <code>" + request.getMethod() + "</code></p>");
+		else if (request.getParameter("newpw").isEmpty())
+			base.setVariable("body", "<p>Your password might not be empty. <a href=\"" + prepend + "administration\">back</a></p>");
+		else if (request.getParameter("newpw") != request.getParameter("pwwdh"))
+			base.setVariable("body", "<p>The passwords you entered didn't match! <a href=\"" + prepend + "administration\">back</a></p>");
+		else
+		{
+			QSqlQuery q = db->exec("SELECT rowid, password FROM admins;");
+#ifdef QT_DEBUG
+			qDebug() << q.lastQuery();
+#endif
+			if (q.lastError().isValid())
+			{
+				qCritical() << q.lastError();
+				base.setVariable("body", "<p>" + q.lastError().text().toUtf8() + "</p>");
+			}
+			else
+			{
+				QByteArray pw = request.getParameter("oldpw");
+				int rowid = -1;
+				while (q.next())
+				{
+					if (passwordMatch(pw, q.value("password").toByteArray()))
+					{
+						rowid = q.value("rowid").toInt();
+						break;
+					}
+				}
+				if (rowid == -1)
+					base.setVariable("body", "<p>The entered passwort did not match with the one you used to log in. <a href=\"" + prepend + "administration\">back</a></p>");
+				else
+				{
+					if (exec("UPDATE admins SET password='" + password(request.getParameter("newpw")) + "' WHERE rowid='" + QString::number(rowid) + "';"))
+					{
+						loggedin = false;
+						session.set("loggedin", false);
+						base.setVariable("body", "<p>Your password has been successfully updated. <a href=\"" + prepend + "administration\">Log In</a></p>");
+					}
+					else
+						base.setVariable("body", "<p>Failed to update password. <a href=\"" + prepend + "administration\">back</a></p>");
+				}
 			}
 		}
 	}
