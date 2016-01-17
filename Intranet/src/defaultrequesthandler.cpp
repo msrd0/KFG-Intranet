@@ -88,9 +88,9 @@ bool passwordMatch(const QByteArray &pw, const QByteArray &db)
 DefaultRequestHandler::DefaultRequestHandler(const QDir &dataDir, const QByteArray &prep, QObject *parent)
 	: HttpRequestHandler(parent)
 	, prepend(prep.endsWith('/') ? prep : prep+"/")
-	, sessionStore(new QSettings)
-	, staticFiles(new QSettings(":/static/static.ini", QSettings::IniFormat))
-	, templates(new QSettings(":/html/html.ini", QSettings::IniFormat))
+	, sessionStore(new QSettings(":/sessionstore.ini", QSettings::IniFormat))
+	, staticFiles(new QSettings(":/static.ini", QSettings::IniFormat))
+	, templates(new QSettings(":/html.ini", QSettings::IniFormat))
 {
 	db = new QSqlDatabase(QSqlDatabase::addDatabase("QSQLITE"));
 	db->setDatabaseName(dataDir.absoluteFilePath("db-v1")); // may increase db version in future

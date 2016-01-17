@@ -38,17 +38,19 @@ HEADERS += \
 
 RESOURCES += \
     html/html.qrc \
-    static/static.qrc
+    static/static.qrc \
+    conf/conf.qrc
 
 DISTFILES += config.ini \
-    html/html.ini \
+    conf/html.ini \
     html/index.html \
     html/base.html \
     static/main.css \
-    static/static.ini \
+    conf/static.ini \
     static/index.css \
 	static/main.js \
     html/administration.html \
     static/administration.css \
     html/edit.html \
-    static/edit.css
+    static/edit.css \
+    conf/sessionstore.ini

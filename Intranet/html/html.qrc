@@ -3,7 +3,6 @@
 		<file>administration.html</file>
 		<file>base.html</file>
 		<file>edit.html</file>
-        <file>html.ini</file>
         <file>index.html</file>
     </qresource>
 </RCC>
