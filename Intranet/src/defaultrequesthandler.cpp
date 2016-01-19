@@ -137,13 +137,13 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	HttpSession session = sessionStore.getSession(request, response);
 	bool loggedin = session.get("loggedin").toBool();
 	
-	QByteArray path = request.getPath().mid(1);
-	qDebug() << request.getIP() << request.getMethod() << path << request.getVersion();
+	QString path = request.path().mid(1);
+	qDebug() << request.address() << request.methodStr() << path << request.protocolStr();
 	response.setHeader("Server", QByteArray("KFG-Intranet (QtWebApp ") + getQtWebAppLibVersion() + ")");
 	
 	if (!db)
 	{
-		response.setStatus(500, "Internal Server Error");
+		response.setStatus(INTERNAL_SERVER_ERROR);
 		Template base = templates.getTemplate("base");
 		QByteArray err = "ERROR: Failed to load the database!!!";
 		if (base.isEmpty())
@@ -172,11 +172,11 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		{
 			qCritical() << q.lastError();
 			response.setHeader("Content-Type", "text/plain; charset=utf-8");
-			response.setStatus(500, "Internal Server Error");
+			response.setStatus(INTERNAL_SERVER_ERROR);
 			response.write(q.lastError().text().toUtf8(), true);
 			return;
 		}
-		QByteArray pw = request.getParameter("pw");
+		QByteArray pw = request.parameter("pw");
 		bool success = false;
 		while (q.next())
 		{
@@ -189,11 +189,11 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		if (success)
 		{
 			session.set("loggedin", true);
-			response.redirect(request.getParameter("redir"));
+			response.redirect(request.parameter("redir"));
 			return;
 		}
 		session.set("loggedin", false);
-		response.redirect(request.getParameter("redir") + "?wrongpw=true");
+		response.redirect(request.parameter("redir") + "?wrongpw=true");
 		return;
 	}
 	
@@ -206,13 +206,13 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	
 	if (path == "edititem")
 	{
-		if (!loggedin || QString::compare(request.getMethod(), "post", Qt::CaseInsensitive) != 0)
+		if (!loggedin || request.method() != HttpRequest::POST)
 		{
 			response.redirect("/administration");
 			return;
 		}
 		
-		if (request.getParameter("item").isEmpty())
+		if (request.parameter("item").isEmpty())
 		{
 			response.write("<html><body>"
 						   "<p>ERROR: No item specified. This probably happens because you were trying to add an "
@@ -221,15 +221,15 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			return;
 		}
 		
-		QByteArray action = request.getParameter("action");
+		QByteArray action = request.parameter("action");
 		if (action == "delete")
 		{
 			QSqlQuery q(*db);
-			if (!q.exec("DELETE FROM items WHERE item_name='" + request.getParameter("item").replace("'", "''") + "';"))
+			if (!q.exec("DELETE FROM items WHERE item_name='" + request.parameter("item").replace("'", "''") + "';"))
 			{
 				qCritical() << q.lastError();
 				response.setHeader("Content-Type", "text/plain; charset=utf-8");
-				response.setStatus(500, "Internal Server Error");
+				response.setStatus(INTERNAL_SERVER_ERROR);
 				response.write(q.lastError().text().toUtf8(), true);
 				return;
 			}
@@ -240,8 +240,8 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			return;
 		}
 		
-		QTemporaryFile *img = request.getUploadedFile("img");
-		bool changeimg = img && !request.getParameter("img").isEmpty();
+		QTemporaryFile *img = request.uploadedFile("img");
+		bool changeimg = img && !request.parameter("img").isEmpty();
 		QImage image;
 		QByteArray imagedata;
 		if (changeimg)
@@ -258,15 +258,15 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		}
 		QSqlQuery q(*db);
 		if (!q.exec("UPDATE items SET "
-					"item_name='" + request.getParameter("name").replace("'", "''") + "'," +
-					"item_link='" + request.getParameter("link").replace("'", "''") + "'" +
+					"item_name='" + request.parameter("name").replace("'", "''") + "'," +
+					"item_link='" + request.parameter("link").replace("'", "''") + "'" +
 					(changeimg ? ",item_img='" + imagedata.toBase64(QByteArray::KeepTrailingEquals) + "'" : "") +
-					" WHERE item_name='" + request.getParameter("item").replace("'", "''") + "';"))
+					" WHERE item_name='" + request.parameter("item").replace("'", "''") + "';"))
 		{
 			qDebug() << q.lastQuery();
 			qCritical() << q.lastError();
 			response.setHeader("Content-Type", "text/plain; charset=utf-8");
-			response.setStatus(500, "Internal Server Error");
+			response.setStatus(INTERNAL_SERVER_ERROR);
 			response.write(q.lastError().text().toUtf8(), true);
 			return;
 		}
@@ -276,34 +276,34 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	
 	if (path == "additem")
 	{
-		if (!loggedin || QString::compare(request.getMethod(), "post", Qt::CaseInsensitive) != 0)
+		if (!loggedin || request.method() != HttpRequest::POST)
 		{
 			response.redirect(prepend + "administration");
 			return;
 		}
 		
-		QByteArray row = request.getParameter("row");
+		QByteArray row = request.parameter("row");
 		if (row == "new")
 		{
 			QSqlQuery q(*db);
-			if (!q.exec("INSERT INTO rows (row_name) VALUES ('" + request.getParameter("rowname").replace("'", "''") + "');"))
+			if (!q.exec("INSERT INTO rows (row_name) VALUES ('" + request.parameter("rowname").replace("'", "''") + "');"))
 			{
 				qDebug() << q.lastQuery();
 				qCritical() << q.lastError();
 				response.setHeader("Content-Type", "text/plain; charset=utf-8");
-				response.setStatus(500, "Internal Server Error");
+				response.setStatus(INTERNAL_SERVER_ERROR);
 				response.write(q.lastError().text().toUtf8(), true);
 				return;
 			}
 	#ifdef QT_DEBUG
 			qDebug() << q.lastQuery();
 	#endif
-			if (!q.exec("SELECT id FROM rows WHERE row_name='" + request.getParameter("rowname").replace("'", "''") + "';") || !q.first())
+			if (!q.exec("SELECT id FROM rows WHERE row_name='" + request.parameter("rowname").replace("'", "''") + "';") || !q.first())
 			{
 				qDebug() << q.lastQuery();
 				qCritical() << q.lastError();
 				response.setHeader("Content-Type", "text/plain; charset=utf-8");
-				response.setStatus(500, "Internal Server Error");
+				response.setStatus(INTERNAL_SERVER_ERROR);
 				response.write(q.lastError().text().toUtf8(), true);
 				return;
 			}
@@ -316,13 +316,13 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		QFile defImg(":/img/noimg.png");
 		defImg.open(QIODevice::ReadOnly);
 		QSqlQuery q(*db);
-		if (!q.exec("INSERT INTO items (row, item_name, item_link, item_img) VALUES (" + row + ", '" + request.getParameter("name").replace("'", "''") + "', '" + request.getParameter("link").replace("'", "''") + "', '"
+		if (!q.exec("INSERT INTO items (row, item_name, item_link, item_img) VALUES (" + row + ", '" + request.parameter("name").replace("'", "''") + "', '" + request.parameter("link").replace("'", "''") + "', '"
 					+ defImg.readAll().toBase64(QByteArray::KeepTrailingEquals) + "');"))
 		{
 			qDebug() << q.lastQuery();
 			qCritical() << q.lastError();
 			response.setHeader("Content-Type", "text/plain; charset=utf-8");
-			response.setStatus(500, "Internal Server Error");
+			response.setStatus(INTERNAL_SERVER_ERROR);
 			response.write(q.lastError().text().toUtf8(), true);
 			defImg.close();
 			return;
@@ -337,26 +337,26 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	
 	if (path == "addnews")
 	{
-		if (!loggedin || QString::compare(request.getMethod(), "post", Qt::CaseInsensitive) != 0)
+		if (!loggedin || request.method() != HttpRequest::POST)
 		{
 			response.redirect(prepend + "administration");
 			return;
 		}
 		
 		QSqlQuery q(*db);
-		if (!q.exec("INSERT INTO news (text, edited) VALUES ('" + request.getParameter("text").replace("'", "''") + "', " + QString::number(QDateTime::currentMSecsSinceEpoch()) + ");"))
+		if (!q.exec("INSERT INTO news (text, edited) VALUES ('" + request.parameter("text").replace("'", "''") + "', " + QString::number(QDateTime::currentMSecsSinceEpoch()) + ");"))
 		{
 			qDebug() << q.lastQuery();
 			qCritical() << q.lastError();
 			response.setHeader("Content-Type", "text/plain; charset=utf-8");
-			response.setStatus(500, "Internal Server Error");
+			response.setStatus(INTERNAL_SERVER_ERROR);
 			response.write(q.lastError().text().toUtf8(), true);
 			return;
 		}
 #ifdef QT_DEBUG
 		qDebug() << q.lastQuery();
 #endif
-		response.redirect(request.getParameter("redir"));
+		response.redirect(request.parameter("redir"));
 		return;
 	}
 	
@@ -368,7 +368,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			qDebug() << q.lastQuery();
 			qCritical() << q.lastError();
 			response.setHeader("Content-Type", "text/plain; charset=utf-8");
-			response.setStatus(500, "Internal Server Error");
+			response.setStatus(INTERNAL_SERVER_ERROR);
 			response.write(q.lastError().text().toUtf8(), true);
 			return;
 		}
@@ -390,7 +390,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	Template base = templates.getTemplate("base");
 	if (path == "base")
 	{
-		response.setStatus(403, "Forbidden");
+		response.setStatus(FORBIDDEN);
 		base.setVariable("body", "403 Forbidden");
 	}
 	else if (path == "newpw")
@@ -410,19 +410,19 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			}
 			else
 			{
-				qDebug() << "NEW PASSWORD GENERATED:" << pw << "(requested from " << request.getIP() << ")";
+				qDebug() << "NEW PASSWORD GENERATED:" << pw << "(requested from " << request.address() << ")";
 				base.setVariable("body", "<p>A new password has been printed out to stdout of the server. <a href=\"" + prepend + "administration\">back</a></p>");
 			}
 		}
 	}
 	else if (path == "changepw")
 	{
-		if (QString::compare(request.getMethod(), "post", Qt::CaseInsensitive) != 0)
+		if (request.method() != HttpRequest::POST)
 			base.setVariable("body", "<p>You might only change a password with a POST request. <a href=\"" + prepend + "administration\">back</a></p>"
-							 "<p>Your request type: <code>" + request.getMethod() + "</code></p>");
-		else if (request.getParameter("newpw").isEmpty())
+							 "<p>Your request type: <code>" + request.methodStr() + "</code></p>");
+		else if (request.parameter("newpw").isEmpty())
 			base.setVariable("body", "<p>Your password might not be empty. <a href=\"" + prepend + "administration\">back</a></p>");
-		else if (request.getParameter("newpw") != request.getParameter("pwwdh"))
+		else if (request.parameter("newpw") != request.parameter("pwwdh"))
 			base.setVariable("body", "<p>The passwords you entered didn't match! <a href=\"" + prepend + "administration\">back</a></p>");
 		else
 		{
@@ -437,7 +437,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			}
 			else
 			{
-				QByteArray pw = request.getParameter("oldpw");
+				QByteArray pw = request.parameter("oldpw");
 				int rowid = -1;
 				while (q.next())
 				{
@@ -451,7 +451,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 					base.setVariable("body", "<p>The entered passwort did not match with the one you used to log in. <a href=\"" + prepend + "administration\">back</a></p>");
 				else
 				{
-					if (exec("UPDATE admins SET password='" + password(request.getParameter("newpw")) + "' WHERE rowid='" + QString::number(rowid) + "';"))
+					if (exec("UPDATE admins SET password='" + password(request.parameter("newpw")) + "' WHERE rowid='" + QString::number(rowid) + "';"))
 					{
 						loggedin = false;
 						session.set("loggedin", false);
@@ -468,15 +468,15 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		Template t = templates.getTemplate(path);
 		if (t.isEmpty())
 		{
-			response.setStatus(404, "Not Found");
+			response.setStatus(NOT_FOUND);
 			base.setVariable("body", "404 Not Found");
 		}
 		else
 		{
 			// redirect parameters
-			for (auto key : request.getParameterMap().keys())
-				t.setVariable("param-" + key, request.getParameter(key));
-			t.setCondition("wrongpw", request.getParameter("wrongpw") == "true");
+			for (auto key : request.parameterMap().keys())
+				t.setVariable("param-" + key, request.parameter(key));
+			t.setCondition("wrongpw", request.parameter("wrongpw") == "true");
 			
 			QSqlQuery items = db->exec("SELECT * FROM items INNER JOIN rows ON row=rows.id ORDER BY row;");
 #ifdef QT_DEBUG
@@ -553,7 +553,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		base.loop("news", size);
 		for (int i = 0; (i==0 || news.next()) && i<size; i++)
 		{
-			qDebug() << i;
+//			qDebug() << i;
 			base.setVariable("news" + QString::number(i) + ".text", news.value("text").toString());
 			base.setVariable("news" + QString::number(i) + ".edited", QDateTime::fromMSecsSinceEpoch(news.value("edited").toLongLong()).date().toString("ddd, dd. MMMM yyyy"));
 		}
