@@ -1,4 +1,6 @@
-# KFG-Intranet [![Build Status](https://travis-ci.com/msrd0/KFG-Intranet.svg?token=fqEVUjqYjQFvWLurRvUX)](https://travis-ci.com/msrd0/KFG-Intranet)
+# KFG-Intranet [![Build Status](https://travis-ci.com/msrd0/KFG-Intranet.svg?token=fqEVUjqYjQFvWLurRvUX&branch=http2)](https://travis-ci.com/msrd0/KFG-Intranet)
+
+*Although this project itself is stable, this branch uses the unstable version of QtWebApp from the http2 branch!*
 
 You either need to clone this repository with the --recursive option or call `git submodule init` and `git submodule update` after cloning.
 
