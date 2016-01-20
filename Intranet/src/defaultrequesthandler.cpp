@@ -137,7 +137,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	HttpSession session = sessionStore.getSession(request, response);
 	bool loggedin = session.get("loggedin").toBool();
 	
-	QString path = request.path().mid(1);
+	QByteArray path = request.path().mid(1);
 	qDebug() << request.address() << request.methodStr() << path << request.protocolStr();
 	response.setHeader("Server", QByteArray("KFG-Intranet (QtWebApp ") + getQtWebAppLibVersion() + ")");
 	
