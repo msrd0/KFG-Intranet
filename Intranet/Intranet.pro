@@ -55,4 +55,5 @@ DISTFILES += config.ini \
     html/edit.html \
     static/edit.css \
     conf/sessionstore.ini \
-    html/imprint.html
+    html/imprint.html \
+    html/help.html
