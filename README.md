@@ -12,4 +12,4 @@ You either need to clone this repository with the --recursive option or call `gi
 
 ## Copyright
 
-The code can be used under the terms of the GPL License version 2.0 or higher. See the `LICENSE` file in the repository.
+The code can be used under the terms of the GPL License version 3 or higher. See the `LICENSE` file in the repository.
