@@ -3,6 +3,7 @@
 		<file>administration.html</file>
 		<file>base.html</file>
 		<file>edit.html</file>
+		<file>help.html</file>
 		<file>imprint.html</file>
         <file>index.html</file>
     </qresource>
