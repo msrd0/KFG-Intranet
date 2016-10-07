@@ -1,5 +1,0 @@
-<RCC>
-    <qresource prefix="/img">
-        <file alias="noimg.png">noimg-256.png</file>
-    </qresource>
-</RCC>

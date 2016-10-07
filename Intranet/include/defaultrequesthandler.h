@@ -21,11 +21,12 @@ public:
 		QString link;
 	};
 	
-    DefaultRequestHandler(const QDir &dataDir, const QByteArray &prep, QObject *parent = 0);
+    DefaultRequestHandler(const QDir &sharedDir, const QDir &dataDir, const QByteArray &prep, QObject *parent = 0);
 
     void service(HttpRequest& request, HttpResponse& response);
 
 private:
+	QDir sharedDir;
 	QByteArray prepend;
 	
 	HttpSessionStore sessionStore;

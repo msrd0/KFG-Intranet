@@ -28,6 +28,22 @@ int main(int argc, char *argv[])
     parser.process(app);
     QStringList args = parser.positionalArguments();
 
+	// look for the shared dir
+	QDir sharedDir("../../Intranet"); // exists in the source tree
+	if (!sharedDir.exists())
+	{
+		sharedDir = "/usr/local/share/intranet";
+		if (!sharedDir.exists())
+		{
+			sharedDir = "/usr/share/intranet";
+			if (!sharedDir.exists())
+			{
+				qCritical("Unable to locate shared dir!");
+				return 1;
+			}
+		}
+	}
+	
     QString dataDirName(parser.value(dataDirOption));
     qDebug() << "Using data dir" << dataDirName;
     QDir dataDir(dataDirName);
@@ -57,7 +73,7 @@ int main(int argc, char *argv[])
 		qCritical() << "The prepend option doesn't start with a /";
 		return 1;
 	}
-    new HttpListener(config, new DefaultRequestHandler(dataDir, prepend));
+    new HttpListener(config, new DefaultRequestHandler(sharedDir, dataDir, prepend));
 
     return app.exec();
 }

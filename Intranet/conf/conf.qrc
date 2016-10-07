@@ -1,7 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file>html.ini</file>
-		<file>sessionstore.ini</file>
-        <file>static.ini</file>
-    </qresource>
-</RCC>

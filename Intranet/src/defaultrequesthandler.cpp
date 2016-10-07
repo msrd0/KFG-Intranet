@@ -85,12 +85,13 @@ bool passwordMatch(const QByteArray &pw, const QByteArray &db)
 		db = 0; \
 	}
 
-DefaultRequestHandler::DefaultRequestHandler(const QDir &dataDir, const QByteArray &prep, QObject *parent)
+DefaultRequestHandler::DefaultRequestHandler(const QDir &sharedDir, const QDir &dataDir, const QByteArray &prep, QObject *parent)
 	: HttpRequestHandler(parent)
+	, sharedDir(sharedDir)
 	, prepend(prep.endsWith('/') ? prep : prep+"/")
-	, sessionStore(new QSettings(":/sessionstore.ini", QSettings::IniFormat))
-	, staticFiles(new QSettings(":/static.ini", QSettings::IniFormat))
-	, templates(new QSettings(":/html.ini", QSettings::IniFormat))
+	, sessionStore(new QSettings(sharedDir.absoluteFilePath("conf/sessionstore.ini"), QSettings::IniFormat))
+	, staticFiles(new QSettings(sharedDir.absoluteFilePath("conf/static.ini"), QSettings::IniFormat))
+	, templates(new QSettings(sharedDir.absoluteFilePath("conf/html.ini"), QSettings::IniFormat))
 {
 	db = new QSqlDatabase(QSqlDatabase::addDatabase("QSQLITE"));
 	db->setDatabaseName(dataDir.absoluteFilePath("db-v1")); // may increase db version in future
