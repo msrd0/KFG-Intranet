@@ -1,6 +1,7 @@
 body {
     font-family: sans-serif;
     margin: 20px 20%;
+	background-color: white;
 }
 @media screen and (max-width: 900px) {
 	body {
@@ -28,6 +29,11 @@ h1 {
 }
 p {
 	text-align: justify;
+}
+.flex {
+	display: -webkit-flex;
+	display: -moz-flex;
+	display: flex;
 }
 
 #menu {
@@ -65,4 +71,14 @@ p {
     width: 100%;
     text-align: right;
     font-size: 0.8em;
+}
+
+#footer {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	text-align: justify;
+	font-size: 0.8em;
+	background-color: white;
+	padding: 15px;
 }
