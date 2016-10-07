@@ -3,7 +3,13 @@
 <h3>Einträge bearbeiten</h3>
 <div class="grid">
     {loop gridrow}
-		<div class="rowtitle">{gridrow.name}</div>
+		<form action="{prepend}editrowtitle" method="POST" enctype="multipart/form-data">
+			<input type="hidden" name="id" value="{gridrow.id}">
+			<div class="rowtitle">
+				<input type="text" name="title" value="{gridrow.name}">
+				<input type="submit" value="Ändern">
+			</div>
+		</form>
         <div class="row">
 			<a class="item" href="{prepend}edit?row={gridrow.index}&col=0&item={gridrow.col0}">
 				<div class="1to1" style="background-image: {gridrow.img0};">

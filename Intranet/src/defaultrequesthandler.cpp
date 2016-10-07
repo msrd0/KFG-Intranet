@@ -205,11 +205,34 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		return;
 	}
 	
+	if (path == "editrowtitle")
+	{
+		if (!loggedin || QString::compare(request.getMethod(), "post", Qt::CaseInsensitive) != 0)
+		{
+			response.redirect(prepend + "administration");
+			return;
+		}
+		
+		QSqlQuery q(*db);
+		if (!q.exec("UPDATE rows SET row_name='" + request.getParameter("title").replace("'", "''") + "' WHERE id=" + request.getParameter("id") + ";"))
+		{
+			qCritical() << q.lastError();
+			response.setHeader("Content-Type", "text/plain; charset=utf-8");
+			response.setStatus(500, "Internal Server Error");
+			response.write(q.lastError().text().toUtf8(), true);
+			return;
+		}
+		qDebug() << q.lastQuery();
+		
+		response.redirect(prepend + "administration");
+		return;
+	}
+	
 	if (path == "edititem")
 	{
 		if (!loggedin || QString::compare(request.getMethod(), "post", Qt::CaseInsensitive) != 0)
 		{
-			response.redirect("/administration");
+			response.redirect(prepend + "administration");
 			return;
 		}
 		
