@@ -11,12 +11,23 @@ addons:
     sources:
       - ubuntu-sdk-team
     packages:
-      - qt5-qmake
-      - qtbase5-dev
-      - qtdeclarative5-dev
-      - libqtwebkit5-dev
-      - libsqlite3-dev
+      - qt5-default
+
+install:
+  - git clone --depth=1 https://github.com/msrd0/QtWebApp.git
+  - pushd QtWebApp/QtWebApp
+  - mkdir build
+  - cd build
+  - cmake -DCMAKE_BUILD_TYPE=Release ..
+  - make -j2
+  - sudo make install
+  - popd
 
 script:
-  - qmake -qt=qt5 -v
-  - ./intranet.sh release qt5 buildonly
+  - mkdir build
+  - pushd build
+  - cd build
+  - cmake -DCMAKE_BUILD_TYPE=Release ..
+  - make -j2
+  - sudo make install
+  - popd
