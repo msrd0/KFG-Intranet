@@ -138,7 +138,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	bool loggedin = session.get("loggedin").toBool();
 	
 	QByteArray path = request.getPath().mid(1);
-	qDebug() << request.getIP() << request.getMethod() << path << request.getVersion();
+	qDebug() << request.getPeerAddress() << request.getMethod() << path << request.getVersion();
 	response.setHeader("Server", QByteArray("KFG-Intranet (QtWebApp ") + getQtWebAppLibVersion() + ")");
 	
 	if (!db)
@@ -410,7 +410,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			}
 			else
 			{
-				qDebug() << "NEW PASSWORD GENERATED:" << pw << "(requested from " << request.getIP() << ")";
+				qDebug() << "NEW PASSWORD GENERATED:" << pw << "(requested from " << request.getPeerAddress() << ")";
 				base.setVariable("body", "<p>A new password has been printed out to stdout of the server. <a href=\"" + prepend + "administration\">back</a></p>");
 			}
 		}
