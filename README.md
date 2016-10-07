@@ -1,12 +1,26 @@
 # KFG-Intranet [![Build Status](https://travis-ci.com/msrd0/KFG-Intranet.svg?token=fqEVUjqYjQFvWLurRvUX)](https://travis-ci.com/msrd0/KFG-Intranet)
 
-You either need to clone this repository with the --recursive option or call `git submodule init` and `git submodule update` after cloning.
+To clone this repository, just execute
+
+    git clone --depth=1 https://msrd0.duckdns.org/git/msrd0/kfg-intranet.git
 
 ## Build & Run
 
-1. Make sure `gcc` (>= 4.8) or `clang` (>= 3.5) and `Qt5` are both installed.
-2. Create `/usr/share/intranet` with read & write privileges for the user that should execute the intranet.
-3. Run `./intranet.sh release` - That's it!
+1. Make sure a compiler supporting C++11, CMake and Qt5 are installed
+2. Go to the source directory and execute
+    
+        mkdir build && cd build
+        cmake -DCMAKE_BUILD_TYPE=Release ..
+        make -j4
+        sudo make install
+
+3. To execute the code, just enter
+
+        intranet
+    
+    If you encounter any problems, try this:
+    
+        LD_LIBRARY_PATH=/usr/local/lib intranet
 
 ## Copyright
 
