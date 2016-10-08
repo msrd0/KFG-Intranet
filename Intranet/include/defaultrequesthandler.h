@@ -2,6 +2,7 @@
 #define DEFAULTREQUESTHANDLER_H
 
 #include <QDir>
+#include <QMutex>
 #include <QSqlDatabase>
 
 #include <httprequesthandler.h>
@@ -35,6 +36,10 @@ private:
 
     QSqlDatabase *db;
     bool exec(const QString &query);
+	
+	QMutex helpmdmutex;
+	QFile helpmdfile;
+	QByteArray helpmd;
 
 };
 

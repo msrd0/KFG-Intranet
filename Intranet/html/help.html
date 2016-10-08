@@ -1,10 +1,38 @@
-<h3>Hilfeseiten:</h3>
+<script src="{prepend}help/content.js?var=helpcontent"></script>
 
-<!-- this is just copied from the old intranet -->
-<ul>
-	<li><a href="Schulkonsole/Schulkonsole  Anmelden.htm" target="_blank"><span class="helplink">Anmelden</span></a></li>
-	<li><a href="Schulkonsole/Schulkonsole  Austeilen, Bereitstellen, Einsammeln.htm" target="_blank"><span class="helplink">Austeilen, Bereitstellen, Einsammeln</span></a></li>
-	<li><a href="Schulkonsole/Schulkonsole  Klassen Projekte auswaehlen Schuelerpasswort aendern.htm" target="_blank"><span class="helplink">Klassen, Projekte auswählen, Schülerpasswort ändern</span></a></li>
-	<li><a href="Schulkonsole/Schulkonsole  Klassenarbeiten.htm" target="_blank"><span class="helplink">Klassenarbeiten</span></a></li>
-	<li><a href="Schulkonsole/schulkonsole_handout.pdf" target="_blank"><span class="helplink">Handout</span></a></li>
-</ul>
+{if loggedin}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/simplemde/1.11.2/simplemde.min.css">
+
+<form action="edithelp" method="post" enctype="multipart/form-data">
+	<textarea width="100%" height="50%" id="edithelp" name="content"></textarea>
+	<div style="text-align: right;">
+		<input type="submit" value="Speichern">
+	</div>
+</form>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.7.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.7.0/languages/markdown.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/simplemde/1.11.2/simplemde.min.js"></script>
+<script type="text/javascript">
+var simplemde = new SimpleMDE({
+	element: $('#edithelp')[0],
+	renderingConfig: {
+		codeSyntaxHighlighting: true
+	},
+	toolbar: [ "bold", "italic", "heading-3", "|", "unordered-list", "ordered-list", "|", "link", "image", "|", "preview", "side-by-side", "fullscreen", "guide" ]
+});
+simplemde.value(helpcontent);
+toggleSideBySide(simplemde);
+</script>
+
+{else loggedin}
+
+<div id="helpcontent"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/0.3.6/marked.min.js"></script>
+<script type="text/javascript">
+$('#helpcontent').html(marked(helpcontent));
+</script>
+
+{end loggedin}

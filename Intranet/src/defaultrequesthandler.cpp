@@ -92,6 +92,7 @@ DefaultRequestHandler::DefaultRequestHandler(const QDir &sharedDir, const QDir &
 	, sessionStore(new QSettings(sharedDir.absoluteFilePath("conf/sessionstore.ini"), QSettings::IniFormat))
 	, staticFiles(new QSettings(sharedDir.absoluteFilePath("conf/static.ini"), QSettings::IniFormat))
 	, templates(new QSettings(sharedDir.absoluteFilePath("conf/html.ini"), QSettings::IniFormat))
+	, helpmdfile(dataDir.absoluteFilePath("help.md"))
 {
 	db = new QSqlDatabase(QSqlDatabase::addDatabase("QSQLITE"));
 	db->setDatabaseName(dataDir.absoluteFilePath("db-v1")); // may increase db version in future
@@ -112,6 +113,20 @@ DefaultRequestHandler::DefaultRequestHandler(const QDir &sharedDir, const QDir &
 	CREATE_TABLE("news",
 				 "text TEXT NOT NULL,"
 				 "edited DATETIME NOT NULL");
+	
+	helpmdmutex.lock();
+	if (helpmdfile.exists())
+	{
+		helpmd = "### Es wurden noch keine Hilfeseiten erstellt\n";
+		helpmdfile.open(QIODevice::WriteOnly);
+		helpmdfile.write(helpmd);
+	}
+	else
+	{
+		helpmdfile.open(QIODevice::ReadWrite);
+		helpmd = helpmdfile.readAll();
+	}
+	helpmdmutex.unlock();
 }
 
 bool DefaultRequestHandler::exec(const QString &query)
@@ -163,6 +178,19 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		return;
 	}
 	
+	if (path == "help/content.js")
+	{
+		QByteArray varname = request.getParameter("var");
+		if (varname.isEmpty())
+			varname = "helpcontent";
+		
+		response.setHeader("Content-Type", "text/javascript");
+		helpmdmutex.lock();
+		response.write("var " + varname + " = '" + helpmd.replace('\n', "\\n").replace('\'', "\\'") + "';\n", true);
+		helpmdmutex.unlock();
+		return;
+	}
+	
 	if (path == "login")
 	{
 		QSqlQuery q = db->exec("SELECT password FROM admins;");
@@ -202,6 +230,27 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	{
 		session.set("loggedin", false);
 		response.redirect(prepend + "index");
+		return;
+	}
+	
+	if (path == "edithelp")
+	{
+		if (!loggedin || QString::compare(request.getMethod(), "post", Qt::CaseInsensitive) != 0)
+		{
+			response.redirect(prepend + "administration");
+			return;
+		}
+		
+		qDebug() << request.getParameterMap();
+		
+		helpmdmutex.lock();
+		helpmd = request.getParameter("content").replace('\r', "");
+		helpmdfile.seek(0);
+		helpmdfile.resize(helpmd.size());
+		helpmdfile.write(helpmd);
+		helpmdmutex.unlock();
+		
+		response.redirect(prepend + "help");
 		return;
 	}
 	
