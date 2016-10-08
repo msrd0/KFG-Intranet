@@ -16,21 +16,15 @@ int main(int argc, char *argv[])
 
     QCommandLineParser parser;
     parser.addHelpOption();
-    QCommandLineOption dataDirOption(QStringList() << "d" << "data", "The data dir.", "data",
-                                 #ifdef QT_DEBUG
-                                     "intranet-data"
-                                 #else
-                                     "/usr/share/intranet/data"
-                                 #endif
-                                     );
+    QCommandLineOption dataDirOption(QStringList() << "d" << "data", "The data dir.", "data", "/usr/share/intranet/data");
     parser.addOption(dataDirOption);
     parser.addPositionalArgument("config", "The configuration file for the server.", "<config>");
     parser.process(app);
     QStringList args = parser.positionalArguments();
 
 	// look for the shared dir
-	QDir sharedDir("../../Intranet"); // exists in the source tree
-	if (!sharedDir.exists())
+	QDir sharedDir = QFileInfo(argv[0]).absoluteDir();
+	if (!sharedDir.cdUp() || !sharedDir.cdUp() || !sharedDir.cd("Intranet") || !sharedDir.exists())
 	{
 		sharedDir = "/usr/local/share/intranet";
 		if (!sharedDir.exists())
@@ -43,6 +37,7 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
+	qDebug() << "Using shared dir" << sharedDir.absolutePath();
 	
     QString dataDirName(parser.value(dataDirOption));
     qDebug() << "Using data dir" << dataDirName;
@@ -57,13 +52,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    QSettings *config = new QSettings(args.size()>0 ? args[0] :
-                                  #ifdef QT_DEBUG
-                                      "config.ini"
-                                  #else
-                                      "/etc/intranet/config.ini"
-                                  #endif
-                                      , QSettings::IniFormat);
+    QSettings *config = new QSettings(args.size()>0 ? args[0] : "/etc/intranet/config.ini", QSettings::IniFormat);
     qDebug() << "Using config file " << config->fileName();
 	QByteArray prepend = "/";
 	if (config->contains("prepend"))
