@@ -17,14 +17,17 @@
 
 .row .item div {
 	background-color: #FF914A;
-	background-size: 80% 80%;
-	background-position: 50% 90%;
+	background-size: 70% 70%;
+	background-position: 50% 80%;
 	background-repeat: no-repeat;
-	padding: 5px;
+	padding: 7px;
+	font-weight: bold;
+	text-transform: uppercase;
 }
 
 .rowtitle {
 	font-weight: bold;
+	font-size: 1.1em;
 	text-transform: uppercase;
 	padding-left: 20px;
 }
