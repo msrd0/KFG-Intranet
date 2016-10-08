@@ -1,6 +1,8 @@
 #ifndef DEFAULTREQUESTHANDLER_H
 #define DEFAULTREQUESTHANDLER_H
 
+#include "intranet.h"
+
 #include <QDir>
 #include <QMutex>
 #include <QSqlDatabase>

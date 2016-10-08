@@ -632,6 +632,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		}
 	}
 	
+	base.setVariable("version", INTRANET_VERSION_STRING);
 	base.setVariable("name", path);
 	base.setVariable("prepend", prepend);
 	base.setCondition("loggedin", loggedin);

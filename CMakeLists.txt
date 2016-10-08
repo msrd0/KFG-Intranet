@@ -9,8 +9,9 @@ find_package(QtWebApp REQUIRED COMPONENTS HttpServer TemplateEngine)
 
 set(CMAKE_AUTOMOC ON)
 
-message("dirs: ${QtWebApp_INCLUDE_DIRS}")
-message("libs: ${QtWebApp_LIBRARIES}")
+execute_process(COMMAND sh ./CMakeVersionInfo.sh ${CMAKE_CURRENT_BINARY_DIR}
+	            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_subdirectory(Intranet)
 
