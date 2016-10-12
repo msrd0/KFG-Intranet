@@ -1,0 +1,19 @@
+database "intranet"
+encoding "utf-8"
+
+table "admins"
+- password "password" !notnull
+
+table "rows"
+- int id !primarykey
+- text row_name !notnull !unique
+
+table "items"
+- &rows.id row !notnull
+- text item_name !notnull !unique
+- blob item_img
+- text item_link !notnull
+
+table "news"
+- text text !notnull
+- datetime edited !notnull

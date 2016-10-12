@@ -1,4 +1,5 @@
 #include "defaultrequesthandler.h"
+#include "db_intranet.h"
 
 #ifdef Q_OS_UNIX
 #  include <unistd.h>

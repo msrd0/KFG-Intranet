@@ -21,6 +21,15 @@ install:
   - sudo make install
   - popd
 
+  - git clone --depth=1 https://github.com/msrd0/QSL.git
+  - pushd QSL
+  - mkdir build
+  - cd build
+  - cmake -DCMAKE_BUILD_TYPE=Release ..
+  - make -j2
+  - sudo make install
+  - popd
+
 script:
   - mkdir build
   - pushd build
