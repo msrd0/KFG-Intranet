@@ -39,7 +39,7 @@
 <form class="row" action="{prepend}additem" method="POST" enctype="multipart/form-data">
 	<div class="item">
 		<div class="1to1">
-			<input type="text" name="name" placeholder="Name">
+			<input id="additemname" type="text" name="name" placeholder="Name">
 		</div>
 	</div>
 	<div class="edititem">
@@ -57,7 +57,7 @@
 			</select>
 			<input id="form_rowname" type="text" name="rowname" placeholder="Name der Reihe">
 		</div>
-		<div><input type="submit" value="Hinzufügen"></div>
+		<div><input id="additemsubmit" type="submit" value="Hinzufügen" disabled></div>
 	</div>
 </form>
 
@@ -65,6 +65,9 @@
 coloritems();
 $("#form_row").change(function() {
 	$("#form_rowname").attr("disabled", !$("#form_rownew").prop("selected"));
+});
+$("#additemname").on('input', function() {
+	$("#additemsubmit").attr("disabled", $("#additemname").val().length == 0);
 });
 </script>
 

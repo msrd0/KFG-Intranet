@@ -394,6 +394,14 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			return;
 		}
 		
+		if (request.getParameter("name").isEmpty())
+		{
+			response.setHeader("Content-Type", "text/plain; charset=utf-8");
+			response.setStatus(400, "Bad Request");
+			response.write("You have attempted to create an item without a name. This is forbidden.", true);
+			return;
+		}
+		
 		QByteArray row = request.getParameter("row");
 		if (row == "new")
 		{
