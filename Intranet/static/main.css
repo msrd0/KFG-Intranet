@@ -2,6 +2,8 @@ body {
     font-family: sans-serif;
     margin: 20px 20%;
 	background-color: white;
+	/* overlay from the footer - use padding to make sure it's not overriden by @media */
+	padding-bottom: 150px;
 }
 .sideimg {
 	position: fixed;
