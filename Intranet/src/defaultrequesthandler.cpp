@@ -386,7 +386,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			row = q.value("id").toByteArray();
 		}
 		
-		QFile defImg(":/img/noimg.png");
+		QFile defImg(sharedDir.absoluteFilePath("img/noimg.png"));
 		defImg.open(QIODevice::ReadOnly);
 		QSqlQuery q(*db);
 		if (!q.exec("INSERT INTO items (row, item_name, item_link, item_img) VALUES (" + row + ", '" + request.getParameter("name").replace("'", "''") + "', '" + request.getParameter("link").replace("'", "''") + "', '"
