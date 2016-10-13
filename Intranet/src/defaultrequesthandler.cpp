@@ -94,25 +94,64 @@ DefaultRequestHandler::DefaultRequestHandler(const QDir &sharedDir, const QDir &
 	, templates(new QSettings(sharedDir.absoluteFilePath("conf/html.ini"), QSettings::IniFormat))
 	, helpmdfile(dataDir.absoluteFilePath("help.md"))
 {
+	int migrate = 2;
+	QString dbFile = dataDir.absoluteFilePath("db-v" + QString::number(migrate));
+	
+	if (!QFileInfo(dbFile).exists())
+	{
+		for (int i = migrate - 1; i <= 1; i--)
+		{
+			QString f = dataDir.absoluteFilePath("db-v" + QString::number(i));
+			if (QFileInfo(f).exists())
+			{
+				QFile::copy(f, dbFile);
+				migrate = i;
+				qDebug() << "going to migrate database from version" << migrate;
+				break;
+			}
+		}
+	}
+	
 	db = new QSqlDatabase(QSqlDatabase::addDatabase("QSQLITE"));
-	db->setDatabaseName(dataDir.absoluteFilePath("db-v1")); // may increase db version in future
+	db->setDatabaseName(dbFile); // may increase db version in future
 	if (!db->open())
 		db = 0;
 	db->exec("PRAGMA foreign_keys = ON;");
+	
+	if (db && migrate == 1)
+	{
+		db->exec("ALTER TABLE items RENAME TO items_old;");
+		db->exec("ALTER TABLE news RENAME TO news_old;");
+	}
+	
 	CREATE_TABLE("admins",
 				 "password TEXT NOT NULL");
 	CREATE_TABLE("rows",
 				 "id INTEGER PRIMARY KEY UNIQUE,"
 				 "row_name TEXT UNIQUE");
 	CREATE_TABLE("items",
+				 "item_id INTEGER PRIMARY KEY UNIQUE,"
 				 "row INTEGER,"
 				 "item_name TEXT NOT NULL UNIQUE,"
 				 "item_img TEXT,"
 				 "item_link TEXT NOT NULL,"
 				 "FOREIGN KEY(row) REFERENCES rows(id)");
 	CREATE_TABLE("news",
+				 "news_id INTEGER PRIMARY KEY UNIQUE,"
 				 "text TEXT NOT NULL,"
 				 "edited DATETIME NOT NULL");
+	
+	if (db && migrate == 1)
+	{
+		db->exec("INSERT INTO items (item_id, row, item_name, item_img, item_link)"
+				 " SELECT rowid AS item_id, row, item_name, item_img, item_link"
+				 " FROM items_old WHERE item_name!=\"\";");
+		db->exec("DROP TABLE items_old;");
+		db->exec("INSERT INTO news (news_id, text, edited)"
+				 " SELECT rowid AS news_id, text, edited"
+				 " FROM news_old;");
+		db->exec("DROP TABLE news_old;");
+	}
 	
 	helpmdmutex.lock();
 	if (helpmdfile.exists())
