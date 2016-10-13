@@ -96,6 +96,16 @@ p {
     text-align: right;
     font-size: 0.8em;
 }
+#news .entry .date * {
+	vertical-align: middle;
+}
+#news .entry .date a {
+	cursor: pointer;
+}
+#news .entry .date img {
+	width: 24px;
+	height: 24px;
+}
 
 #footer {
 	position: fixed;

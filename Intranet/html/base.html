@@ -9,8 +9,11 @@
 <link rel="stylesheet" href="{prepend}static/main.css">
 <link rel="stylesheet" href="{prepend}static/{name}.css">
 
+<script type="text/javascript">var prepend = "{prepend}";</script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
 <script src="{prepend}static/main.js"></script>
+<script src="{prepend}static/news.js"></script>
 
 </head>
 <body>
@@ -43,9 +46,16 @@
 			</form>
 		{end loggedin}
 		{loop news}
-			<div class="entry">
-				<p>{news.text}</p>
-				<div class="date">{news.edited}</div>
+			<div class="entry" id="news{news.id}">
+				<p id="news{news.id}text" class="text">{news.text}</p>
+				<div class="date">
+					{if loggedin}
+						<a onClick="news_edit({news.id});"><img src="{prepend}static/edit.svg"></a>
+						<a onClick="news_delete({news.id});"><img src="{prepend}static/delete.svg"></a>
+						<span style="color: #888; padding: 2px;">&mdash;</span>
+					{end loggedin}
+					{news.edited}
+				</div>
 			</div>
         {end news}
     </div>

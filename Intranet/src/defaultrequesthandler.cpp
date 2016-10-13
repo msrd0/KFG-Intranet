@@ -472,6 +472,56 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		return;
 	}
 	
+	if (path == "editnews")
+	{
+		if (!loggedin || QString::compare(request.getMethod(), "post", Qt::CaseInsensitive) != 0)
+		{
+			response.redirect(prepend + "administration");
+			return;
+		}
+		
+		QSqlQuery q(*db);
+		if (!q.exec("UPDATE news SET text='" + request.getParameter("text").replace("'", "''") + "' WHERE news_id='" + request.getParameter("id").replace("'", "''") + "';"))
+		{
+			qDebug() << q.lastQuery();
+			qCritical() << q.lastError();
+			response.setHeader("Content-Type", "text/plain; charset=utf-8");
+			response.setStatus(500, "Internal Server Error");
+			response.write(q.lastError().text().toUtf8(), true);
+			return;
+		}
+#ifdef QT_DEBUG
+		qDebug() << q.lastQuery();
+#endif
+		response.redirect(request.getParameter("redir"));
+		return;
+	}
+	
+	if (path == "deletenews")
+	{
+		if (!loggedin)
+		{
+			response.redirect(prepend + "administration");
+			return;
+		}
+		
+		QSqlQuery q(*db);
+		if (!q.exec("DELETE FROM news WHERE news_id='" + request.getParameter("id").replace("'", "''") + "';"))
+		{
+			qDebug() << q.lastQuery();
+			qCritical() << q.lastError();
+			response.setHeader("Content-Type", "text/plain; charset=utf-8");
+			response.setStatus(500, "Internal Server Error");
+			response.write(q.lastError().text().toUtf8(), true);
+			return;
+		}
+#ifdef QT_DEBUG
+		qDebug() << q.lastQuery();
+#endif
+		// no redir - called via jquery
+		return;
+	}
+	
 	if (path.startsWith("itemimage/"))
 	{
 		QSqlQuery q(*db);
@@ -654,6 +704,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	{
 		qCritical() << news.lastError();
 		base.loop("news", 1);
+		base.setVariable("news0.id", "-1");
 		base.setVariable("news0.text", news.lastError().text());
 		base.setVariable("news0.edited", "SERVER ERROR");
 	}
@@ -666,6 +717,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		for (int i = 0; (i==0 || news.next()) && i<size; i++)
 		{
 			qDebug() << i;
+			base.setVariable("news" + QString::number(i) + ".id", news.value("news_id").toString());
 			base.setVariable("news" + QString::number(i) + ".text", news.value("text").toString());
 			base.setVariable("news" + QString::number(i) + ".edited", QDateTime::fromMSecsSinceEpoch(news.value("edited").toLongLong()).date().toString("ddd, dd. MMMM yyyy"));
 		}
