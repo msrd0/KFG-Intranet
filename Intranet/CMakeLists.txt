@@ -6,6 +6,7 @@ add_executable(intranet
 		src/main.cpp
 		${otherfiles}
 	)
+add_dependencies(intranet intranet.h)
 target_include_directories(intranet PUBLIC ${QtWebApp_INCLUDE_DIRS})
 target_link_libraries(intranet ${QtWebApp_LIBRARIES} Qt5::Gui Qt5::Sql)
 install(TARGETS intranet
