@@ -1,3 +1,9 @@
+intranet (1.1.2-1) precise; urgency=low
+
+  * Version 1.1.2
+  
+ -- Dominic Meiser <meiserdo@web.de>  Sat, 15 Oct 2016 18:56:00 +0200
+
 intranet (1.1.1-1) precise; urgency=low
 
   * Version 1.1.1
