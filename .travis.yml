@@ -13,6 +13,7 @@ addons:
       - sourceline: 'deb [arch=amd64] https://msrd0.duckdns.org/debian/ precise main'
     packages:
       - apt-utils
+      - cmake-data
       - cmake
       - debhelper
       - dpkg-dev
