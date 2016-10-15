@@ -36,3 +36,4 @@ build-*/
 *~
 Makefile
 intranet-data/
+.travis-keys.tar.xz
