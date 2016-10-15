@@ -11,6 +11,7 @@ addons:
       - sourceline: 'ppa:george-edison55/precise-backports'
       - sourceline: 'ppa:immerrr-k/qt5-backport'
       - sourceline: 'deb [arch=amd64] https://msrd0.duckdns.org/debian/ precise main'
+        key_url: 'http://http-keys.gnupg.net/pks/lookup?op=get&search=0xF8661CC669BF0588'
     packages:
       - apt-utils
       - cmake-data
