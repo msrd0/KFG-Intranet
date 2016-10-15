@@ -45,7 +45,7 @@ script:
   - ls ../intranet*
 
 after_success:
-  - (
+  - git describe --tags --candidates=0 && (
          mkdir mount
       && sshfs alarmpi-debian@msrd0.duckdns.org:/srv/debian -o BatchMode=yes mount
       && rm mount/pool/main/all/i/intranet* mount/pool/main/amd64/i/intranet*
