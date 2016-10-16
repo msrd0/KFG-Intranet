@@ -14,6 +14,7 @@ git clone --depth=1 https://msrd0.duckdns.org/git/msrd0/kfg-intranet.git
 on Debian/Ubuntu, just execute the following commands:
 
 ```bash
+sudo add-apt-repository ppa:immerrr-k/qt5-backport
 echo "deb [arch=amd64] https://msrd0.duckdns.org/debian/ precise main" | sudo tee -a /etc/apt/sources.list >/dev/null
 apt-key adv --keyserver keys.gnupg.net --recv-keys F8661CC669BF0588
 apt-get update
