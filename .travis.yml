@@ -3,6 +3,8 @@ sudo: required
 dist: precise
 
 compiler: clang
+env:
+- LD_LIBRARY_PATH=/usr/local/lib
 
 addons:
   ssh_known_hosts: msrd0.duckdns.org
