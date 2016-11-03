@@ -1,25 +1,37 @@
 language: c++
 sudo: required
-dist: trusty
+dist: precise
 
-compiler:
- - gcc
- - clang
+compiler: gcc
 
 addons:
+  ssh_known_hosts: msrd0.duckdns.org
   apt:
+    sources:
+      - sourceline: 'ppa:george-edison55/precise-backports'
+      - sourceline: 'ppa:immerrr-k/qt5-backport'
+      - sourceline: 'deb [arch=amd64] https://msrd0.duckdns.org/debian/ precise main'
+        key_url: 'http://http-keys.gnupg.net/pks/lookup?op=get&search=0xF8661CC669BF0588'
     packages:
+      - apt-utils
+      - cmake-data
+      - cmake
+      - debhelper
+      - dpkg-dev
+      - libqtwebapp-dev
+      - qtchooser
       - qt5-default
+      - realpath
+      - sshfs
 
-install:
-  - git clone --depth=1 https://github.com/msrd0/QtWebApp.git
-  - pushd QtWebApp/QtWebApp
-  - mkdir build
-  - cd build
-  - cmake -DCMAKE_BUILD_TYPE=Release ..
-  - make -j2
-  - sudo make install
-  - popd
+before_script:
+  - dig +short myip.opendns.com @resolver1.opendns.com
+  - openssl aes-256-cbc -K $encrypted_e9321ec5018e_key -iv $encrypted_e9321ec5018e_iv -in .travis-keys.tar.xz.enc -out .travis-keys.tar.xz -d
+  - tar xfa .travis-keys.tar.xz
+  - mv alarmpi-debian* ~/.ssh/
+  - touch ~/.ssh/config
+  - echo "Host msrd0.duckdns.org" >>~/.ssh/config
+  - echo "  IdentityFile ~/.ssh/alarmpi-debian" >>~/.ssh/config
 
   - git clone --depth=1 https://github.com/msrd0/QSL.git
   - pushd QSL
@@ -31,9 +43,30 @@ install:
   - popd
 
 script:
+# try to compile "as it is"
   - mkdir build
   - pushd build
   - cmake -DCMAKE_BUILD_TYPE=Release ..
   - make -j2
   - sudo make install
   - popd
+# and then try to compile it as a debian package
+  - dpkg-buildpackage -us -uc
+  - ls ../intranet*
+
+after_success:
+  - git describe --tags --candidates=0 && (
+         mkdir mount
+      && sshfs alarmpi-debian@msrd0.duckdns.org:/srv/debian -o BatchMode=yes mount
+      && rm mount/pool/main/all/i/intranet* mount/pool/main/amd64/i/intranet*
+      && cp ../intranet*all*.deb mount/pool/main/all/i/
+      && cp ../intranet*amd64*.deb mount/pool/main/amd64/i/
+      && ssh alarmpi-debian@msrd0.duckdns.org -o BatchMode=yes -v /srv/debian/bin/sign.sh
+      && mount/bin/genpackages.sh mount
+      && mount/bin/genrelease.sh mount
+      && ssh alarmpi-debian@msrd0.duckdns.org -o BatchMode=yes -v /srv/debian/bin/signreleases.sh
+      && sudo umount mount
+    )
+
+after_script:
+  - rm ~/.ssh/alarmpi-debian*

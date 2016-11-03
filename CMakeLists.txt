@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.1)
 project("KFG Intranet")
 
 set(CMAKE_CXX_STANDARD 11)
@@ -10,8 +10,9 @@ find_package(QSL REQUIRED)
 
 set(CMAKE_AUTOMOC ON)
 
-execute_process(COMMAND sh ./CMakeVersionInfo.sh ${CMAKE_CURRENT_BINARY_DIR}
-	            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+add_custom_target(intranet.h sh ./CMakeVersionInfo.sh ${CMAKE_CURRENT_BINARY_DIR}
+	              WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+				  SOURCES CMakeVersionInfo.sh)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_subdirectory(Intranet)

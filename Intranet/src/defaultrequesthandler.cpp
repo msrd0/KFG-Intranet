@@ -95,25 +95,64 @@ DefaultRequestHandler::DefaultRequestHandler(const QDir &sharedDir, const QDir &
 	, templates(new QSettings(sharedDir.absoluteFilePath("conf/html.ini"), QSettings::IniFormat))
 	, helpmdfile(dataDir.absoluteFilePath("help.md"))
 {
+	int migrate = 2;
+	QString dbFile = dataDir.absoluteFilePath("db-v" + QString::number(migrate));
+	
+	if (!QFileInfo(dbFile).exists())
+	{
+		for (int i = migrate - 1; i <= 1; i--)
+		{
+			QString f = dataDir.absoluteFilePath("db-v" + QString::number(i));
+			if (QFileInfo(f).exists())
+			{
+				QFile::copy(f, dbFile);
+				migrate = i;
+				qDebug() << "going to migrate database from version" << migrate;
+				break;
+			}
+		}
+	}
+	
 	db = new QSqlDatabase(QSqlDatabase::addDatabase("QSQLITE"));
-	db->setDatabaseName(dataDir.absoluteFilePath("db-v1")); // may increase db version in future
+	db->setDatabaseName(dbFile); // may increase db version in future
 	if (!db->open())
 		db = 0;
 	db->exec("PRAGMA foreign_keys = ON;");
+	
+	if (db && migrate == 1)
+	{
+		db->exec("ALTER TABLE items RENAME TO items_old;");
+		db->exec("ALTER TABLE news RENAME TO news_old;");
+	}
+	
 	CREATE_TABLE("admins",
 				 "password TEXT NOT NULL");
 	CREATE_TABLE("rows",
 				 "id INTEGER PRIMARY KEY UNIQUE,"
 				 "row_name TEXT UNIQUE");
 	CREATE_TABLE("items",
+				 "item_id INTEGER PRIMARY KEY UNIQUE,"
 				 "row INTEGER,"
 				 "item_name TEXT NOT NULL UNIQUE,"
 				 "item_img TEXT,"
 				 "item_link TEXT NOT NULL,"
 				 "FOREIGN KEY(row) REFERENCES rows(id)");
 	CREATE_TABLE("news",
+				 "news_id INTEGER PRIMARY KEY UNIQUE,"
 				 "text TEXT NOT NULL,"
 				 "edited DATETIME NOT NULL");
+	
+	if (db && migrate == 1)
+	{
+		db->exec("INSERT INTO items (item_id, row, item_name, item_img, item_link)"
+				 " SELECT rowid AS item_id, row, item_name, item_img, item_link"
+				 " FROM items_old WHERE item_name!=\"\";");
+		db->exec("DROP TABLE items_old;");
+		db->exec("INSERT INTO news (news_id, text, edited)"
+				 " SELECT rowid AS news_id, text, edited"
+				 " FROM news_old;");
+		db->exec("DROP TABLE news_old;");
+	}
 	
 	helpmdmutex.lock();
 	if (helpmdfile.exists())
@@ -356,6 +395,14 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			return;
 		}
 		
+		if (request.getParameter("name").isEmpty())
+		{
+			response.setHeader("Content-Type", "text/plain; charset=utf-8");
+			response.setStatus(400, "Bad Request");
+			response.write("You have attempted to create an item without a name. This is forbidden.", true);
+			return;
+		}
+		
 		QByteArray row = request.getParameter("row");
 		if (row == "new")
 		{
@@ -387,7 +434,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			row = q.value("id").toByteArray();
 		}
 		
-		QFile defImg(":/img/noimg.png");
+		QFile defImg(sharedDir.absoluteFilePath("img/noimg.png"));
 		defImg.open(QIODevice::ReadOnly);
 		QSqlQuery q(*db);
 		if (!q.exec("INSERT INTO items (row, item_name, item_link, item_img) VALUES (" + row + ", '" + request.getParameter("name").replace("'", "''") + "', '" + request.getParameter("link").replace("'", "''") + "', '"
@@ -431,6 +478,56 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		qDebug() << q.lastQuery();
 #endif
 		response.redirect(request.getParameter("redir"));
+		return;
+	}
+	
+	if (path == "editnews")
+	{
+		if (!loggedin || QString::compare(request.getMethod(), "post", Qt::CaseInsensitive) != 0)
+		{
+			response.redirect(prepend + "administration");
+			return;
+		}
+		
+		QSqlQuery q(*db);
+		if (!q.exec("UPDATE news SET text='" + request.getParameter("text").replace("'", "''") + "' WHERE news_id='" + request.getParameter("id").replace("'", "''") + "';"))
+		{
+			qDebug() << q.lastQuery();
+			qCritical() << q.lastError();
+			response.setHeader("Content-Type", "text/plain; charset=utf-8");
+			response.setStatus(500, "Internal Server Error");
+			response.write(q.lastError().text().toUtf8(), true);
+			return;
+		}
+#ifdef QT_DEBUG
+		qDebug() << q.lastQuery();
+#endif
+		response.redirect(request.getParameter("redir"));
+		return;
+	}
+	
+	if (path == "deletenews")
+	{
+		if (!loggedin)
+		{
+			response.redirect(prepend + "administration");
+			return;
+		}
+		
+		QSqlQuery q(*db);
+		if (!q.exec("DELETE FROM news WHERE news_id='" + request.getParameter("id").replace("'", "''") + "';"))
+		{
+			qDebug() << q.lastQuery();
+			qCritical() << q.lastError();
+			response.setHeader("Content-Type", "text/plain; charset=utf-8");
+			response.setStatus(500, "Internal Server Error");
+			response.write(q.lastError().text().toUtf8(), true);
+			return;
+		}
+#ifdef QT_DEBUG
+		qDebug() << q.lastQuery();
+#endif
+		// no redir - called via jquery
 		return;
 	}
 	
@@ -616,6 +713,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	{
 		qCritical() << news.lastError();
 		base.loop("news", 1);
+		base.setVariable("news0.id", "-1");
 		base.setVariable("news0.text", news.lastError().text());
 		base.setVariable("news0.edited", "SERVER ERROR");
 	}
@@ -628,6 +726,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		for (int i = 0; (i==0 || news.next()) && i<size; i++)
 		{
 			qDebug() << i;
+			base.setVariable("news" + QString::number(i) + ".id", news.value("news_id").toString());
 			base.setVariable("news" + QString::number(i) + ".text", news.value("text").toString());
 			base.setVariable("news" + QString::number(i) + ".edited", QDateTime::fromMSecsSinceEpoch(news.value("edited").toLongLong()).date().toString("ddd, dd. MMMM yyyy"));
 		}

@@ -4,7 +4,9 @@ function apply1to1()
     for (var i = 0; i < elems.size(); i++)
     {
         var e = $(elems[i]);
-        e.css("min-height", e.css("width"));
+        var width = e.css("width");
+        e.css("min-height", width);
+        e.css("max-height", width);
     }
 }
 

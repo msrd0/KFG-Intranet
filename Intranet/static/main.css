@@ -2,6 +2,8 @@ body {
     font-family: sans-serif;
     margin: 20px 20%;
 	background-color: white;
+	/* overlay from the footer - use padding to make sure it's not overriden by @media */
+	padding-bottom: 150px;
 }
 .sideimg {
 	position: fixed;
@@ -93,6 +95,16 @@ p {
     width: 100%;
     text-align: right;
     font-size: 0.8em;
+}
+#news .entry .date * {
+	vertical-align: middle;
+}
+#news .entry .date a {
+	cursor: pointer;
+}
+#news .entry .date img {
+	width: 24px;
+	height: 24px;
 }
 
 #footer {

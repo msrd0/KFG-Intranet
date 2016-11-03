@@ -1,6 +1,9 @@
 #!/bin/bash
 
-pushd "`dirname "$0"`" >/dev/null
+dir="`realpath "$1"`"
+
+#pushd "`dirname "$0"`" >/dev/null
+cd "`dirname "$0"`"
 
 if [ -d .git ]
 then
@@ -11,11 +14,11 @@ else
 	vername="v?.?.?-unknown"
 fi
 
-popd >/dev/null
+#popd >/dev/null
 
 echo "// AUTO GENERATED - DO NOT EDIT
 #pragma once
 
 #define INTRANET_VERSION \"$version\"
 #define INTRANET_VERSION_STRING \"$vername\"
-" >"$1"/intranet.h
+" >"$dir"/intranet.h
