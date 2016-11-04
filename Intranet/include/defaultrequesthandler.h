@@ -2,10 +2,10 @@
 #define DEFAULTREQUESTHANDLER_H
 
 #include "intranet.h"
+#include "db_intranet.h"
 
 #include <QDir>
 #include <QMutex>
-#include <QSqlDatabase>
 
 #include <httprequesthandler.h>
 #include <httpsessionstore.h>
@@ -36,8 +36,7 @@ private:
     StaticFileController staticFiles;
     TemplateCache templates;
 
-    QSqlDatabase *db;
-    bool exec(const QString &query);
+    qsl::db::intranet d;
 	
 	QMutex helpmdmutex;
 	QFile helpmdfile;

@@ -1,4 +1,5 @@
 #include "defaultrequesthandler.h"
+#include "db_intranet.h"
 
 #ifdef Q_OS_UNIX
 #  include <unistd.h>
@@ -11,18 +12,11 @@
 #include <QDate>
 #include <QImage>
 #include <QRegularExpression>
-#include <QSqlError>
-#include <QSqlQuery>
 #include <QUrl>
 
-#ifndef PASSWORD_SALT_LENGTH
-#  define PASSWORD_SALT_LENGTH 32
-#endif
-#ifndef PASSWORD_REPEATS
-#  define PASSWORD_REPEATS 1000
-#endif
+using namespace qsl;
 
-QByteArray salt (uint length)
+static QByteArray salt (uint length)
 {
 	QByteArray bytes;
 #ifdef Q_OS_UNIX
@@ -44,47 +38,6 @@ QByteArray salt (uint length)
 	return bytes;
 }
 
-QByteArray password (const QByteArray &in)
-{
-	QByteArray pw = "$" + QByteArray::number(PASSWORD_REPEATS) + "$";
-	QByteArray s = salt(PASSWORD_SALT_LENGTH);
-	pw.append(s.toBase64()).append("$");
-	QByteArray hash = s + in;
-	for (uint i = 0; i < PASSWORD_REPEATS; i++)
-		hash = QCryptographicHash::hash(s + hash, QCryptographicHash::Sha256);
-	pw.append(hash.toBase64()).append("$");
-	return pw;
-}
-bool passwordMatch(const QByteArray &pw, const QByteArray &db)
-{
-	static QRegularExpression regex("^\\$(?P<repeats>\\d+)\\$(?P<salt>[^\\$]+)\\$(?P<hash>[^\\$]+)\\$$");
-	QRegularExpressionMatch match = regex.match(db);
-	if (!match.hasMatch())
-		return false;
-	uint db_repeats = match.captured("repeats").toUInt();
-	QByteArray db_salt = QByteArray::fromBase64(match.captured("salt").toLatin1());
-	QByteArray db_hash = QByteArray::fromBase64(match.captured("hash").toLatin1());
-	QByteArray hash = db_salt + pw;
-	for (uint i = 0; i < db_repeats; i++)
-		hash = QCryptographicHash::hash(db_salt + hash, QCryptographicHash::Sha256);
-	return (hash == db_hash);
-}
-
-
-/// macro to execute the sql to create a table
-#define CREATE_TABLE(name, sql) \
-	if (!db) \
-	{ \
-		qDebug() << "Error in " __FILE__ ":" << __LINE__ << ": no db available"; \
-	} \
-	else if (!exec("CREATE TABLE IF NOT EXISTS '" name "' (" sql ");")) \
-	{ \
-		qDebug() << "Error was in " __FILE__ ":" << __LINE__; \
-		db->close(); \
-		delete db; \
-		db = 0; \
-	}
-
 DefaultRequestHandler::DefaultRequestHandler(const QDir &sharedDir, const QDir &dataDir, const QByteArray &prep, QObject *parent)
 	: HttpRequestHandler(parent)
 	, sharedDir(sharedDir)
@@ -92,18 +45,22 @@ DefaultRequestHandler::DefaultRequestHandler(const QDir &sharedDir, const QDir &
 	, sessionStore(new QSettings(sharedDir.absoluteFilePath("conf/sessionstore.ini"), QSettings::IniFormat))
 	, staticFiles(new QSettings(sharedDir.absoluteFilePath("conf/static.ini"), QSettings::IniFormat))
 	, templates(new QSettings(sharedDir.absoluteFilePath("conf/html.ini"), QSettings::IniFormat))
+	, d("sqlite")
 	, helpmdfile(dataDir.absoluteFilePath("help.md"))
 {
-	int migrate = 2;
-	QString dbFile = dataDir.absoluteFilePath("db-v" + QString::number(migrate));
+	int migrate = 3;
+	QString dbFile = dataDir.absoluteFilePath("intranet.db");
 	
 	if (!QFileInfo(dbFile).exists())
 	{
-		for (int i = migrate - 1; i <= 1; i--)
+		qDebug() << "database does not exist";
+		for (int i = migrate - 1; i > 0; i--)
 		{
 			QString f = dataDir.absoluteFilePath("db-v" + QString::number(i));
+			qDebug() << "checking whether" << f << "exists";
 			if (QFileInfo(f).exists())
 			{
+				qDebug() << "copying" << f << "to" << dbFile;
 				QFile::copy(f, dbFile);
 				migrate = i;
 				qDebug() << "going to migrate database from version" << migrate;
@@ -112,45 +69,11 @@ DefaultRequestHandler::DefaultRequestHandler(const QDir &sharedDir, const QDir &
 		}
 	}
 	
-	db = new QSqlDatabase(QSqlDatabase::addDatabase("QSQLITE"));
-	db->setDatabaseName(dbFile); // may increase db version in future
-	if (!db->open())
-		db = 0;
-	db->exec("PRAGMA foreign_keys = ON;");
-	
-	if (db && migrate == 1)
+	d.setName(dbFile);
+	if (!d.connect())
 	{
-		db->exec("ALTER TABLE items RENAME TO items_old;");
-		db->exec("ALTER TABLE news RENAME TO news_old;");
-	}
-	
-	CREATE_TABLE("admins",
-				 "password TEXT NOT NULL");
-	CREATE_TABLE("rows",
-				 "id INTEGER PRIMARY KEY UNIQUE,"
-				 "row_name TEXT UNIQUE");
-	CREATE_TABLE("items",
-				 "item_id INTEGER PRIMARY KEY UNIQUE,"
-				 "row INTEGER,"
-				 "item_name TEXT NOT NULL UNIQUE,"
-				 "item_img TEXT,"
-				 "item_link TEXT NOT NULL,"
-				 "FOREIGN KEY(row) REFERENCES rows(id)");
-	CREATE_TABLE("news",
-				 "news_id INTEGER PRIMARY KEY UNIQUE,"
-				 "text TEXT NOT NULL,"
-				 "edited DATETIME NOT NULL");
-	
-	if (db && migrate == 1)
-	{
-		db->exec("INSERT INTO items (item_id, row, item_name, item_img, item_link)"
-				 " SELECT rowid AS item_id, row, item_name, item_img, item_link"
-				 " FROM items_old WHERE item_name!=\"\";");
-		db->exec("DROP TABLE items_old;");
-		db->exec("INSERT INTO news (news_id, text, edited)"
-				 " SELECT rowid AS news_id, text, edited"
-				 " FROM news_old;");
-		db->exec("DROP TABLE news_old;");
+		qCritical() << "Failed to connect to database; will exit";
+		exit(1);
 	}
 	
 	helpmdmutex.lock();
@@ -168,25 +91,6 @@ DefaultRequestHandler::DefaultRequestHandler(const QDir &sharedDir, const QDir &
 	helpmdmutex.unlock();
 }
 
-bool DefaultRequestHandler::exec(const QString &query)
-{
-#ifdef QT_DEBUG
-	qDebug() << query;
-#endif
-	if (db == 0)
-	{
-		qCritical("No database available");
-		return false;
-	}
-	QSqlQuery q = db->exec(query);
-	if (q.lastError().isValid())
-	{
-		qCritical() << q.lastError();
-		return false;
-	}
-	return true;
-}
-
 void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response)
 {
 	HttpSession session = sessionStore.getSession(request, response);
@@ -195,21 +99,6 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	QByteArray path = request.getPath().mid(1);
 	qDebug() << request.getPeerAddress() << request.getMethod() << path << request.getVersion();
 	response.setHeader("Server", QByteArray("KFG-Intranet (QtWebApp ") + getQtWebAppLibVersion() + ")");
-	
-	if (!db)
-	{
-		response.setStatus(500, "Internal Server Error");
-		Template base = templates.getTemplate("base");
-		QByteArray err = "ERROR: Failed to load the database!!!";
-		if (base.isEmpty())
-			response.write("<html><body><p>" + err + "</p></body></html>", true);
-		else
-		{
-			base.setVariable("body", err);
-			response.write(base.toUtf8(), true);
-		}
-		return;
-	}
 	
 	if (path == "")
 	{
@@ -232,23 +121,12 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	
 	if (path == "login")
 	{
-		QSqlQuery q = db->exec("SELECT password FROM admins;");
-#ifdef QT_DEBUG
-		qDebug() << q.lastQuery();
-#endif
-		if (q.lastError().isValid())
-		{
-			qCritical() << q.lastError();
-			response.setHeader("Content-Type", "text/plain; charset=utf-8");
-			response.setStatus(500, "Internal Server Error");
-			response.write(q.lastError().text().toUtf8(), true);
-			return;
-		}
+		auto q = d.adminstrators().query();
 		QByteArray pw = request.getParameter("pw");
 		bool success = false;
-		while (q.next())
+		for (auto p : q)
 		{
-			if (passwordMatch(pw, q.value("password").toByteArray()))
+			if (p.password() == pw)
 			{
 				success = true;
 				break;
@@ -301,16 +179,22 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			return;
 		}
 		
-		QSqlQuery q(*db);
-		if (!q.exec("UPDATE rows SET row_name='" + request.getParameter("title").replace("'", "''") + "' WHERE id=" + request.getParameter("id") + ";"))
+		auto q = d.rows().filter("id" EQ request.getParameter("id")).query();
+		if (q.empty())
 		{
-			qCritical() << q.lastError();
 			response.setHeader("Content-Type", "text/plain; charset=utf-8");
-			response.setStatus(500, "Internal Server Error");
-			response.write(q.lastError().text().toUtf8(), true);
+			response.setStatus(400, "Bad Request");
+			response.write("ERROR: Unable to find the row with the given id", true);
 			return;
 		}
-		qDebug() << q.lastQuery();
+		
+		if (!q[0].setRow_name(request.getParameter("title")))
+		{
+			response.setHeader("Content-Type", "text/plain; charset=utf-8");
+			response.setStatus(500, "Internal Server Error");
+			response.write("ERROR: Unable to update the row title", true);
+			return;
+		}
 		
 		response.redirect(prepend + "administration");
 		return;
@@ -336,18 +220,14 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 		QByteArray action = request.getParameter("action");
 		if (action == "delete")
 		{
-			QSqlQuery q(*db);
-			if (!q.exec("DELETE FROM items WHERE item_name='" + request.getParameter("item").replace("'", "''") + "';"))
+			if (!d.items().filter("item_name" EQ request.getParameter("item")).remove())
 			{
-				qCritical() << q.lastError();
 				response.setHeader("Content-Type", "text/plain; charset=utf-8");
 				response.setStatus(500, "Internal Server Error");
-				response.write(q.lastError().text().toUtf8(), true);
+				response.write("ERROR: Unable to delete the requested item", true);
 				return;
 			}
-#ifdef QT_DEBUG
-			qDebug() << q.lastQuery();
-#endif
+			
 			response.redirect(prepend + "administration");
 			return;
 		}
@@ -368,20 +248,26 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 				image.save(&buf, "PNG");
 			}
 		}
-		QSqlQuery q(*db);
-		if (!q.exec("UPDATE items SET "
-					"item_name='" + request.getParameter("name").replace("'", "''") + "'," +
-					"item_link='" + request.getParameter("link").replace("'", "''") + "'" +
-					(changeimg ? ",item_img='" + imagedata.toBase64(QByteArray::KeepTrailingEquals) + "'" : "") +
-					" WHERE item_name='" + request.getParameter("item").replace("'", "''") + "';"))
+		
+		auto q = d.items().filter("item_name" EQ request.getParameter("item")).query();
+		if (q.empty())
 		{
-			qDebug() << q.lastQuery();
-			qCritical() << q.lastError();
 			response.setHeader("Content-Type", "text/plain; charset=utf-8");
-			response.setStatus(500, "Internal Server Error");
-			response.write(q.lastError().text().toUtf8(), true);
+			response.setStatus(400, "Bad Request");
+			response.write("ERROR: Unable to find item with the given name", true);
 			return;
 		}
+		
+		if (!q[0].setItem_name(request.getParameter("name"))
+				|| !q[0].setItem_link(request.getParameter("link"))
+				|| (changeimg && !q[0].setItem_img(imagedata.toBase64(QByteArray::KeepTrailingEquals))))
+		{
+			response.setHeader("Content-Type", "text/plain; charset=utf-8");
+			response.setStatus(500, "Internal Server Error");
+			response.write("ERROR: Unable to update the requested item", true);
+			return;
+		}
+		
 		response.redirect(prepend + "administration");
 		return;
 	}
@@ -402,54 +288,37 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			return;
 		}
 		
-		QByteArray row = request.getParameter("row");
-		if (row == "new")
+		if (request.getParameter("row") == "new")
 		{
-			QSqlQuery q(*db);
-			if (!q.exec("INSERT INTO rows (row_name) VALUES ('" + request.getParameter("rowname").replace("'", "''") + "');"))
+			if (!d.rows().insert({request.getParameter("rowname")}))
 			{
-				qDebug() << q.lastQuery();
-				qCritical() << q.lastError();
 				response.setHeader("Content-Type", "text/plain; charset=utf-8");
 				response.setStatus(500, "Internal Server Error");
-				response.write(q.lastError().text().toUtf8(), true);
+				response.write("ERROR: Unable to create the requested row", true);
 				return;
 			}
-	#ifdef QT_DEBUG
-			qDebug() << q.lastQuery();
-	#endif
-			if (!q.exec("SELECT id FROM rows WHERE row_name='" + request.getParameter("rowname").replace("'", "''") + "';") || !q.first())
-			{
-				qDebug() << q.lastQuery();
-				qCritical() << q.lastError();
-				response.setHeader("Content-Type", "text/plain; charset=utf-8");
-				response.setStatus(500, "Internal Server Error");
-				response.write(q.lastError().text().toUtf8(), true);
-				return;
-			}
-	#ifdef QT_DEBUG
-			qDebug() << q.lastQuery();
-	#endif
-			row = q.value("id").toByteArray();
+		}
+		
+		auto row = d.rows().filter("row_name" EQ request.getParameter("rowname")).query();
+		if (row.empty())
+		{
+			response.setHeader("Content-Type", "text/plain; charset=utf-8");
+			response.setStatus(400, "Bad Request");
+			response.write("ERROR: Unable to find the row", true);
+			return;
 		}
 		
 		QFile defImg(sharedDir.absoluteFilePath("img/noimg.png"));
 		defImg.open(QIODevice::ReadOnly);
-		QSqlQuery q(*db);
-		if (!q.exec("INSERT INTO items (row, item_name, item_link, item_img) VALUES (" + row + ", '" + request.getParameter("name").replace("'", "''") + "', '" + request.getParameter("link").replace("'", "''") + "', '"
-					+ defImg.readAll().toBase64(QByteArray::KeepTrailingEquals) + "');"))
+		if (!d.items().insert({row[0], request.getParameter("name"), defImg.readAll().toBase64(QByteArray::KeepTrailingEquals), request.getParameter("link")}))
 		{
-			qDebug() << q.lastQuery();
-			qCritical() << q.lastError();
 			response.setHeader("Content-Type", "text/plain; charset=utf-8");
 			response.setStatus(500, "Internal Server Error");
-			response.write(q.lastError().text().toUtf8(), true);
+			response.write("ERROR: Unable to insert item", true);
 			defImg.close();
 			return;
 		}
-#ifdef QT_DEBUG
-		qDebug() << q.lastQuery();
-#endif
+		
 		response.redirect(prepend + "administration");
 		defImg.close();
 		return;
@@ -463,19 +332,14 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			return;
 		}
 		
-		QSqlQuery q(*db);
-		if (!q.exec("INSERT INTO news (text, edited) VALUES ('" + request.getParameter("text").replace("'", "''") + "', " + QString::number(QDateTime::currentMSecsSinceEpoch()) + ");"))
+		if (!d.news().insert({request.getParameter("text"), QDateTime::currentDateTime()}))
 		{
-			qDebug() << q.lastQuery();
-			qCritical() << q.lastError();
 			response.setHeader("Content-Type", "text/plain; charset=utf-8");
 			response.setStatus(500, "Internal Server Error");
-			response.write(q.lastError().text().toUtf8(), true);
+			response.write("ERROR: Unable to insert news", true);
 			return;
 		}
-#ifdef QT_DEBUG
-		qDebug() << q.lastQuery();
-#endif
+		
 		response.redirect(request.getParameter("redir"));
 		return;
 	}
@@ -488,19 +352,24 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			return;
 		}
 		
-		QSqlQuery q(*db);
-		if (!q.exec("UPDATE news SET text='" + request.getParameter("text").replace("'", "''") + "' WHERE news_id='" + request.getParameter("id").replace("'", "''") + "';"))
+		auto q = d.news().filter("news_id" EQ request.getParameter("id")).query();
+		if (q.empty())
 		{
-			qDebug() << q.lastQuery();
-			qCritical() << q.lastError();
 			response.setHeader("Content-Type", "text/plain; charset=utf-8");
-			response.setStatus(500, "Internal Server Error");
-			response.write(q.lastError().text().toUtf8(), true);
+			response.setStatus(400, "Bad Request");
+			response.write("ERROR: Unable to find news with the given id", true);
 			return;
 		}
-#ifdef QT_DEBUG
-		qDebug() << q.lastQuery();
-#endif
+		
+		if (!q[0].setText(request.getParameter("text"))
+				|| !q[0].setEdited(QDateTime::currentDateTime()))
+		{
+			response.setHeader("Content-Type", "text/plain; charset=utf-8");
+			response.setStatus(500, "Internal Server Error");
+			response.write("ERROR: Unable to update news", true);
+			return;
+		}
+		
 		response.redirect(request.getParameter("redir"));
 		return;
 	}
@@ -513,40 +382,39 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			return;
 		}
 		
-		QSqlQuery q(*db);
-		if (!q.exec("DELETE FROM news WHERE news_id='" + request.getParameter("id").replace("'", "''") + "';"))
+		auto q = d.news().filter("news_id" EQ request.getParameter("id")).query();
+		if (q.empty())
 		{
-			qDebug() << q.lastQuery();
-			qCritical() << q.lastError();
 			response.setHeader("Content-Type", "text/plain; charset=utf-8");
-			response.setStatus(500, "Internal Server Error");
-			response.write(q.lastError().text().toUtf8(), true);
+			response.setStatus(400, "Bad Request");
+			response.write("ERROR: Unable to find news with the given id", true);
 			return;
 		}
-#ifdef QT_DEBUG
-		qDebug() << q.lastQuery();
-#endif
+		
+		if (!d.news().remove(q[0]))
+		{
+			response.setHeader("Content-Type", "text/plain; charset=utf-8");
+			response.setStatus(500, "Internal Server Error");
+			response.write("ERROR: Unable to delete news", true);
+			return;
+		}
+		
 		// no redir - called via jquery
 		return;
 	}
 	
 	if (path.startsWith("itemimage/"))
 	{
-		QSqlQuery q(*db);
-		if (!q.exec("SELECT item_img FROM items WHERE item_name='" + path.mid(10).replace("'", "''") + "';") || !q.first())
+		auto q = d.items().filter("item_name" EQ path.mid(10)).query();
+		if (q.empty())
 		{
-			qDebug() << q.lastQuery();
-			qCritical() << q.lastError();
 			response.setHeader("Content-Type", "text/plain; charset=utf-8");
-			response.setStatus(500, "Internal Server Error");
-			response.write(q.lastError().text().toUtf8(), true);
+			response.setStatus(400, "Bad Request");
+			response.write("ERROR: Unable to find the requested item", true);
 			return;
 		}
-		response.setHeader("Content-Type", "image/png");
-#ifndef QT_DEBUG
-		response.setHeader("Cache-Control", "max-age=600");
-#endif
-		response.write(QByteArray::fromBase64(q.value(0).toByteArray()), true);
+		
+		response.write(QByteArray::fromBase64(q[0].item_img()), true);
 		return;
 	}
 	
@@ -567,17 +435,13 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 	{
 #ifdef Q_OS_UNIX
 		if (!isatty(STDOUT_FILENO))
-		{
 			base.setVariable("body", "ERROR: The stdout of the server doesn't point to a tty.");
-		}
 		else
 #endif
 		{
 			QByteArray pw = salt(6).toBase64(QByteArray::OmitTrailingEquals);
-			if (!exec("INSERT INTO admins (password) VALUES ('" + password(pw) + "');"))
-			{
+			if (!d.adminstrators().insert({pw}))
 				base.setVariable("body", "Failed to create a new password. Check the server log for details.");
-			}
 			else
 			{
 				qDebug() << "NEW PASSWORD GENERATED:" << pw << "(requested from " << request.getPeerAddress() << ")";
@@ -596,40 +460,30 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			base.setVariable("body", "<p>The passwords you entered didn't match! <a href=\"" + prepend + "administration\">back</a></p>");
 		else
 		{
-			QSqlQuery q = db->exec("SELECT rowid, password FROM admins;");
-#ifdef QT_DEBUG
-			qDebug() << q.lastQuery();
-#endif
-			if (q.lastError().isValid())
+			auto q = d.adminstrators().query();
+			int in = -1;
+			
+			QByteArray pw = request.getParameter("oldpw");
+			for (int i = 0; i < q.size(); i++)
 			{
-				qCritical() << q.lastError();
-				base.setVariable("body", "<p>" + q.lastError().text().toUtf8() + "</p>");
+				if (q[i].password() == pw)
+				{
+					in = i;
+					break;
+				}
 			}
+			if (in == -1)
+				base.setVariable("body", "<p>The entered passwort did not match with the one you used to log in. <a href=\"" + prepend + "administration\">back</a></p>");
 			else
 			{
-				QByteArray pw = request.getParameter("oldpw");
-				int rowid = -1;
-				while (q.next())
+				if (q[in].setPassword(request.getParameter("newpw")))
 				{
-					if (passwordMatch(pw, q.value("password").toByteArray()))
-					{
-						rowid = q.value("rowid").toInt();
-						break;
-					}
+					loggedin = false;
+					session.set("loggedin", false);
+					base.setVariable("body", "<p>Your password has been successfully updated. <a href=\"" + prepend + "administration\">Log In</a></p>");
 				}
-				if (rowid == -1)
-					base.setVariable("body", "<p>The entered passwort did not match with the one you used to log in. <a href=\"" + prepend + "administration\">back</a></p>");
 				else
-				{
-					if (exec("UPDATE admins SET password='" + password(request.getParameter("newpw")) + "' WHERE rowid='" + QString::number(rowid) + "';"))
-					{
-						loggedin = false;
-						session.set("loggedin", false);
-						base.setVariable("body", "<p>Your password has been successfully updated. <a href=\"" + prepend + "administration\">Log In</a></p>");
-					}
-					else
-						base.setVariable("body", "<p>Failed to update password. <a href=\"" + prepend + "administration\">back</a></p>");
-				}
+					base.setVariable("body", "<p>Failed to update password. <a href=\"" + prepend + "administration\">back</a></p>");
 			}
 		}
 	}
@@ -648,87 +502,59 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 				t.setVariable("param-" + key, request.getParameter(key));
 			t.setCondition("wrongpw", request.getParameter("wrongpw") == "true");
 			
-			QSqlQuery items = db->exec("SELECT * FROM items INNER JOIN rows ON row=rows.id ORDER BY row;");
-#ifdef QT_DEBUG
-			qDebug() << items.lastQuery();
-#endif
-			if (items.lastError().isValid())
+			auto items = d.items().query();
+			
+			QList<QPair<QPair<int, QString>, QList<Item> > > l;
+			for (auto item : items)
 			{
-				qCritical() << items.lastError();
-				base.setVariable("body", items.lastError().text());
+				int row = item.row().id();
+				while (l.size() <= row)
+					l.append(qMakePair(QPair<int, QString>(), QList<Item>()));
+				l[row].first = qMakePair(row, item.row().row_name());
+				l[row].second << Item{item.item_name(), prepend + "itemimage/" + QUrl::toPercentEncoding(item.item_name()), item.item_link()};
 			}
-			else
+			
+			for (int i = 0; i < l.size();)
 			{
-				QList<QPair<QPair<int, QString>, QList<Item> > > l;
-				while (items.next())
-				{
-					int row = items.value("row").toInt();
-					while (l.size() <= row)
-						l.append(qMakePair(QPair<int, QString>(), QList<Item>()));
-					l[row].first = qMakePair(row, items.value("row_name").toString());
-					l[row].second << Item{items.value("item_name").toString(), prepend + "itemimage/" + QUrl::toPercentEncoding(items.value("item_name").toByteArray()), items.value("item_link").toString()};
-				}
-				
-				for (int i = 0; i < l.size();)
-				{
-					if (l[i].second.isEmpty())
-						l.removeAt(i);
-					else
-						i++;
-				}
-				
-				t.loop("gridrow", l.size());
-				for (int i = 0; i < l.size(); i++)
-				{
-					auto &a = l[i];
-					t.setVariable("gridrow" + QString::number(i) + ".name", a.first.second);
-					t.setVariable("gridrow" + QString::number(i) + ".index", QString::number(i));
-					t.setVariable("gridrow" + QString::number(i) + ".id", QString::number(a.first.first));
-					int j;
-					for (j = 0; j < a.second.size(); j++)
-					{
-						t.setVariable("gridrow" + QString::number(i) + ".col"  + QString::number(j), a.second[j].name);
-						t.setVariable("gridrow" + QString::number(i) + ".img"  + QString::number(j), a.second[j].img.isEmpty() ? "none" : "url(" + a.second[j].img + ")");
-						t.setVariable("gridrow" + QString::number(i) + ".link" + QString::number(j), a.second[j].link);
-					}
-					for (; j < 4; j++)
-					{
-						t.setVariable("gridrow" + QString::number(i) + ".col"  + QString::number(j), QString());
-						t.setVariable("gridrow" + QString::number(i) + ".img"  + QString::number(j), "none");
-						t.setVariable("gridrow" + QString::number(i) + ".link" + QString::number(j), "#");
-					}
-				}
-				
-				base.setVariable("body", t);
+				if (l[i].second.isEmpty())
+					l.removeAt(i);
+				else
+					i++;
 			}
+			
+			t.loop("gridrow", l.size());
+			for (int i = 0; i < l.size(); i++)
+			{
+				auto &a = l[i];
+				t.setVariable("gridrow" + QString::number(i) + ".name", a.first.second);
+				t.setVariable("gridrow" + QString::number(i) + ".index", QString::number(i));
+				t.setVariable("gridrow" + QString::number(i) + ".id", QString::number(a.first.first));
+				int j;
+				for (j = 0; j < a.second.size(); j++)
+				{
+					t.setVariable("gridrow" + QString::number(i) + ".col"  + QString::number(j), a.second[j].name);
+					t.setVariable("gridrow" + QString::number(i) + ".img"  + QString::number(j), a.second[j].img.isEmpty() ? "none" : "url(" + a.second[j].img + ")");
+					t.setVariable("gridrow" + QString::number(i) + ".link" + QString::number(j), a.second[j].link);
+				}
+				for (; j < 4; j++)
+				{
+					t.setVariable("gridrow" + QString::number(i) + ".col"  + QString::number(j), QString());
+					t.setVariable("gridrow" + QString::number(i) + ".img"  + QString::number(j), "none");
+					t.setVariable("gridrow" + QString::number(i) + ".link" + QString::number(j), "#");
+				}
+			}
+			
+			base.setVariable("body", t);
 		}
 	}
 	
-	QSqlQuery news = db->exec("SELECT * FROM news ORDER BY edited DESC LIMIT 5;");
-#ifdef QT_DEBUG
-	qDebug() << news.lastQuery();
-#endif
-	if (news.lastError().isValid())
+	auto news = d.news().desc().limit(5).query();
+	base.loop("news", news.size());
+	for (int i = 0; i < news.size(); i++)
 	{
-		qCritical() << news.lastError();
-		base.loop("news", 1);
-		base.setVariable("news0.id", "-1");
-		base.setVariable("news0.text", news.lastError().text());
-		base.setVariable("news0.edited", "SERVER ERROR");
-	}
-	else
-	{
-		int size = news.last() ? news.at()+1 : 0;
-		if (!news.first())
-			size = 0;
-		base.loop("news", size);
-		for (int i = 0; (i==0 || news.next()) && i<size; i++)
-		{
-			qDebug() << i;
-			base.setVariable("news" + QString::number(i) + ".id", news.value("news_id").toString());
-			base.setVariable("news" + QString::number(i) + ".text", news.value("text").toString());
-			base.setVariable("news" + QString::number(i) + ".edited", QDateTime::fromMSecsSinceEpoch(news.value("edited").toLongLong()).date().toString("ddd, dd. MMMM yyyy"));
-		}
+		base.setVariable("news" + QString::number(i) + ".id", QString::number(news[i].news_id()));
+		base.setVariable("news" + QString::number(i) + ".text", news[i].text());
+		base.setVariable("news" + QString::number(i) + ".edited", news[i].edited().date().toString("ddd, dd. MMMM yyyy"));
 	}
 	
 	base.setVariable("version", INTRANET_VERSION_STRING);

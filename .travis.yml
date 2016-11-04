@@ -2,7 +2,9 @@ language: c++
 sudo: required
 dist: precise
 
-compiler: gcc
+compiler: clang
+env:
+- LD_LIBRARY_PATH=/usr/local/lib
 
 addons:
   ssh_known_hosts: msrd0.duckdns.org
@@ -23,6 +25,16 @@ addons:
       - qt5-default
       - realpath
       - sshfs
+
+install:
+  - git clone --depth=1 https://github.com/msrd0/QSL.git
+  - pushd QSL
+  - mkdir build
+  - cd build
+  - cmake -DCMAKE_BUILD_TYPE=Release ..
+  - make -j2
+  - sudo make install
+  - popd
 
 before_script:
   - dig +short myip.opendns.com @resolver1.opendns.com

@@ -4,8 +4,10 @@ add_executable(intranet
 		include/defaultrequesthandler.h
 		src/defaultrequesthandler.cpp
 		src/main.cpp
+		db.qsl
 		${otherfiles}
 	)
+qsl_compile(TARGET intranet FILES db.qsl QTYPE)
 add_dependencies(intranet intranet.h)
 target_include_directories(intranet PUBLIC ${QtWebApp_INCLUDE_DIRS})
 target_link_libraries(intranet ${QtWebApp_LIBRARIES} Qt5::Gui Qt5::Sql)
