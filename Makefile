@@ -6,7 +6,7 @@ push: mount clean copy sign gen signrel
 
 mount:
 	mkdir mount
-	sshfs alarmpi-debian@msrd0.duckdns.org
+	sshfs alarmpi-debian@msrd0.duckdns.org:/srv/debian mount
 
 clean:
 	rm mount/pool/main/all/i/intranet*
