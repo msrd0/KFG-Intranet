@@ -60,22 +60,15 @@ script:
   - echo "QSL $version"
   - wget "https://github.com/msrd0/KFG-Intranet/archive/v${version}.tar.gz"
   - tar xfz "v${version}.tar.gz"
-  - cd "KFG-Intranet-${version}"
+  - pushd "KFG-Intranet-${version}"
   - cp -R ../debian .
   - dpkg-buildpackage -us -uc
-  - ls ../intranet*
+  - popd
+  - ls intranet*
 
 after_success:
-  -    mkdir mount
-    && sshfs alarmpi-debian@msrd0.duckdns.org:/srv/debian -o BatchMode=yes mount
-    && rm mount/pool/main/all/i/intranet* mount/pool/main/amd64/i/intranet*
-    && cp ../intranet*all*.deb mount/pool/main/all/i/
-    && cp ../intranet*amd64*.deb mount/pool/main/amd64/i/
-    && ssh alarmpi-debian@msrd0.duckdns.org -o BatchMode=yes -v /srv/debian/bin/sign.sh
-    && mount/bin/genpackages.sh mount
-    && mount/bin/genrelease.sh mount
-    && ssh alarmpi-debian@msrd0.duckdns.org -o BatchMode=yes -v /srv/debian/bin/signreleases.sh
-  -  sudo umount mount
+  - make
+  - test -d mount && sudo umount mount || true
 
 after_script:
   - rm ~/.ssh/alarmpi-debian*
