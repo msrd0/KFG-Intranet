@@ -9,8 +9,8 @@ mount:
 	sshfs alarmpi-debian@msrd0.duckdns.org:/srv/debian mount
 
 clean:
-	rm mount/pool/main/all/i/intranet*
-	rm mount/pool/main/amd64/i/intranet*
+	rm mount/pool/main/all/i/intranet* || true
+	rm mount/pool/main/amd64/i/intranet* || true
 
 copy:
 	cp intranet*all*.deb mount/pool/main/all/i/
