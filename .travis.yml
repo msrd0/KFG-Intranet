@@ -2,7 +2,7 @@ language: c++
 sudo: required
 dist: precise
 
-compiler: clang
+compiler: gcc
 env:
 - LD_LIBRARY_PATH=/usr/local/lib
 
@@ -12,6 +12,7 @@ addons:
     sources:
       - sourceline: 'ppa:george-edison55/precise-backports'
       - sourceline: 'ppa:immerrr-k/qt5-backport'
+      - sourceline: 'ppa:ubuntu-toolchain-r/test'
       - sourceline: 'deb [arch=amd64] https://msrd0.duckdns.org/debian/ precise main'
         #key_url: 'http://http-keys.gnupg.net/pks/lookup?op=get&search=0xF8661CC669BF0588'
         key_url: 'https://msrd0.duckdns.org/debian/key.asc'
@@ -21,11 +22,19 @@ addons:
       - cmake
       - debhelper
       - dpkg-dev
+      - g++-5
+      - gcc-5
       - libqtwebapp-dev
       - qtchooser
       - qt5-default
       - realpath
       - sshfs
+
+before_install:
+  - export CC=/usr/bin/gcc-5
+  - export CXX=/usr/bin/g++-5
+  - $CC --version
+  - $CXX --version
 
 install:
   - git clone --depth=1 https://github.com/msrd0/QSL.git
