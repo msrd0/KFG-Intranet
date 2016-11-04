@@ -13,9 +13,11 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName("KFG Intranet Server");
+	QCoreApplication::setApplicationVersion(INTRANET_VERSION_STRING);
 
     QCommandLineParser parser;
     parser.addHelpOption();
+	parser.addVersionOption();
     QCommandLineOption dataDirOption(QStringList() << "d" << "data", "The data dir.", "data", "/usr/share/intranet/data");
     parser.addOption(dataDirOption);
     parser.addPositionalArgument("config", "The configuration file for the server.", "<config>");
@@ -24,7 +26,7 @@ int main(int argc, char *argv[])
 
 	// look for the shared dir
 	QDir sharedDir = QFileInfo(argv[0]).absoluteDir();
-	if (!sharedDir.cdUp() || !sharedDir.cdUp() || !sharedDir.cd("Intranet") || !sharedDir.exists())
+	if (!sharedDir.cdUp() || !sharedDir.exists())
 	{
 		sharedDir = "/usr/local/share/intranet";
 		if (!sharedDir.exists())
