@@ -1,19 +1,22 @@
 database "intranet"
 encoding "utf-8"
 
-table "admins"
+table "adminstrators"
+- uint id !primarykey
 - password "password" !notnull
 
 table "rows"
-- int id !primarykey
+- uint id !primarykey
 - text row_name !notnull !unique
 
 table "items"
+- uint item_id !primarykey
 - &rows.id row !notnull
 - text item_name !notnull !unique
 - blob item_img
 - text item_link !notnull
 
 table "news"
+- uint news_id !primarykey
 - text text !notnull
 - datetime edited !notnull
