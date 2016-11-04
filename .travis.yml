@@ -17,18 +17,14 @@ addons:
         #key_url: 'http://http-keys.gnupg.net/pks/lookup?op=get&search=0xF8661CC669BF0588'
         key_url: 'https://msrd0.duckdns.org/debian/key.asc'
     packages:
-      - apt-utils
       - cmake-data
       - cmake
-      - debhelper
-      - dpkg-dev
       - g++-5
       - gcc-5
       - libqtwebapp-dev
       - qtchooser
       - qt5-default
       - realpath
-      - sshfs
 
 before_install:
   - export CC=/usr/bin/gcc-5
@@ -46,40 +42,10 @@ install:
   - sudo make install
   - popd
 
-before_script:
-  - dig +short myip.opendns.com @resolver1.opendns.com
-  - openssl aes-256-cbc -K $encrypted_e9321ec5018e_key -iv $encrypted_e9321ec5018e_iv -in .travis-keys.tar.xz.enc -out .travis-keys.tar.xz -d
-  - tar xfa .travis-keys.tar.xz
-  - mv alarmpi-debian* ~/.ssh/
-  - touch ~/.ssh/config
-  - echo "Host msrd0.duckdns.org" >>~/.ssh/config
-  - echo "  IdentityFile ~/.ssh/alarmpi-debian" >>~/.ssh/config
-
 script:
-# try to compile "as it is"
   - mkdir build
   - pushd build
   - cmake -DCMAKE_BUILD_TYPE=Release ..
   - make -j2 VERBOSE=1
   - sudo make install
   - popd
-# and then try to compile it as a debian package
-  - dpkg-buildpackage -us -uc
-  - ls ../intranet*
-
-after_success:
-  - git describe --tags --candidates=0 && (
-         mkdir mount
-      && sshfs alarmpi-debian@msrd0.duckdns.org:/srv/debian -o BatchMode=yes mount
-      && rm mount/pool/main/all/i/intranet* mount/pool/main/amd64/i/intranet*
-      && cp ../intranet*all*.deb mount/pool/main/all/i/
-      && cp ../intranet*amd64*.deb mount/pool/main/amd64/i/
-      && ssh alarmpi-debian@msrd0.duckdns.org -o BatchMode=yes -v /srv/debian/bin/sign.sh
-      && mount/bin/genpackages.sh mount
-      && mount/bin/genrelease.sh mount
-      && ssh alarmpi-debian@msrd0.duckdns.org -o BatchMode=yes -v /srv/debian/bin/signreleases.sh
-      && sudo umount mount
-    )
-
-after_script:
-  - rm ~/.ssh/alarmpi-debian*
