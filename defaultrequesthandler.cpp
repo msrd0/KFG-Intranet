@@ -77,6 +77,13 @@ DefaultRequestHandler::DefaultRequestHandler(const QDir &sharedDir, const QDir &
 		exit(1);
 	}
 	
+	if (migrate < 3)
+	{
+		auto news = d.news().query();
+		for (auto n : news)
+			n.setEdited(QDateTime::fromMSecsSinceEpoch(n.edited().toMSecsSinceEpoch() / 1000));
+	}
+	
 	helpmdmutex.lock();
 	if (helpmdfile.exists())
 	{
