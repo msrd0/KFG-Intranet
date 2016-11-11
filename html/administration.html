@@ -52,7 +52,7 @@
 			<select id="form_row" name="row">
 				<option id="form_rownew" value="new">Neue Reihe</option>
 				{loop gridrow}
-					<option value="{gridrow.id}">{gridrow.name}</option>
+					<option value="{gridrow.name}">{gridrow.name}</option>
 				{end gridrow}
 			</select>
 			<input id="form_rowname" type="text" name="rowname" placeholder="Name der Reihe">
