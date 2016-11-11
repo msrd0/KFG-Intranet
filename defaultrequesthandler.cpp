@@ -299,7 +299,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			}
 		}
 		
-		auto row = d.rows().filter("row_name" EQ request.getParameter("rowname")).query();
+		auto row = d.rows().filter("row_name" EQ request.getParameter("row")).query();
 		if (row.empty())
 		{
 			response.setHeader("Content-Type", "text/plain; charset=utf-8");
