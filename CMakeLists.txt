@@ -33,6 +33,3 @@ install(DIRECTORY conf   DESTINATION share/intranet)
 install(DIRECTORY html   DESTINATION share/intranet)
 install(DIRECTORY img    DESTINATION share/intranet)
 install(DIRECTORY static DESTINATION share/intranet)
-
-install(FILES config.ini
-	    DESTINATION /etc/intranet)
