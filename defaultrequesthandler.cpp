@@ -15,6 +15,7 @@
 #include <QUrl>
 
 using namespace qsl;
+using namespace qtwebapp;
 
 static QByteArray salt (uint length)
 {

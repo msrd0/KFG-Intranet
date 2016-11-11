@@ -12,7 +12,7 @@
 #include <staticfilecontroller.h>
 #include <templatecache.h>
 
-class DefaultRequestHandler : public HttpRequestHandler
+class DefaultRequestHandler : public qtwebapp::HttpRequestHandler
 {
     Q_OBJECT
 
@@ -26,15 +26,15 @@ public:
 	
     DefaultRequestHandler(const QDir &sharedDir, const QDir &dataDir, const QByteArray &prep, QObject *parent = 0);
 
-    void service(HttpRequest& request, HttpResponse& response);
+    void service(qtwebapp::HttpRequest& request, qtwebapp::HttpResponse& response);
 
 private:
 	QDir sharedDir;
 	QByteArray prepend;
 	
-	HttpSessionStore sessionStore;
-    StaticFileController staticFiles;
-    TemplateCache templates;
+	qtwebapp::HttpSessionStore sessionStore;
+    qtwebapp::StaticFileController staticFiles;
+    qtwebapp::TemplateCache templates;
 
     qsl::db::intranet d;
 	

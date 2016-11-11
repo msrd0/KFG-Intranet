@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt5 5.2.0 REQUIRED COMPONENTS Core Gui Sql)
-find_package(QtWebApp REQUIRED COMPONENTS HttpServer TemplateEngine)
+find_package(QtWebApp 1.7.0 REQUIRED COMPONENTS HttpServer TemplateEngine)
 find_package(QSL REQUIRED)
 
 set(CMAKE_AUTOMOC ON)

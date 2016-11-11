@@ -9,6 +9,8 @@
 
 #include <httplistener.h>
 
+using namespace qtwebapp;
+
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
