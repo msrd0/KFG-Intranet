@@ -14,7 +14,7 @@ clean:
 
 copy:
 	cp intranet*all*.deb mount/pool/main/all/i/
-	cp intranet*amd64*.deb mount/pool/main/amd64/all/i/
+	cp intranet*amd64*.deb mount/pool/main/amd64/i/
 
 sign:
 	ssh alarmpi-debian@msrd0.duckdns.org -o BatchMode=yes -v \
