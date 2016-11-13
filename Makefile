@@ -2,7 +2,8 @@
 
 first: push
 
-push: mount clean copy sign gen signrel
+push: mount clean copy sign
+#push: mount clean copy sign gen signrel
 
 mount:
 	mkdir mount
