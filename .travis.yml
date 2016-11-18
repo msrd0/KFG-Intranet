@@ -14,7 +14,6 @@ addons:
       - sourceline: 'ppa:immerrr-k/qt5-backport'
       - sourceline: 'ppa:ubuntu-toolchain-r/test'
       - sourceline: 'deb [arch=amd64] https://msrd0.duckdns.org/debian/ precise main'
-        #key_url: 'http://http-keys.gnupg.net/pks/lookup?op=get&search=0xF8661CC669BF0588'
         key_url: 'https://msrd0.duckdns.org/debian/key.asc'
     packages:
       - cmake-data
@@ -22,25 +21,16 @@ addons:
       - g++-5
       - gcc-5
       - libqtwebapp-dev
+      - qsl
       - qtchooser
       - qt5-default
       - realpath
 
-before_install:
+before_script:
   - export CC=/usr/bin/gcc-5
   - export CXX=/usr/bin/g++-5
   - $CC --version
   - $CXX --version
-
-install:
-  - git clone --depth=1 https://github.com/msrd0/QSL.git
-  - pushd QSL
-  - mkdir build
-  - cd build
-  - cmake -DCMAKE_BUILD_TYPE=Release ..
-  - make -j2
-  - sudo make install
-  - popd
 
 script:
   - mkdir build
