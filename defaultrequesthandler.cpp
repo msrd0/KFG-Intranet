@@ -14,7 +14,7 @@
 #include <QRegularExpression>
 #include <QUrl>
 
-using namespace qsl;
+using namespace spis;
 using namespace qtwebapp;
 
 static QByteArray salt (uint length)

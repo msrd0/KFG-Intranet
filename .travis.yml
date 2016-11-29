@@ -21,10 +21,10 @@ addons:
       - g++-5
       - gcc-5
       - libqtwebapp-dev
-      - qsl
       - qtchooser
       - qt5-default
       - realpath
+      - spis
 
 before_script:
   - export CC=/usr/bin/gcc-5

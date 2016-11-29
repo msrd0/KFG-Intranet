@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt5 5.2.0 REQUIRED COMPONENTS Core Gui Sql)
 find_package(QtWebApp 1.7.0 REQUIRED COMPONENTS HttpServer TemplateEngine)
-find_package(QSL REQUIRED)
+find_package(SPIS REQUIRED)
 
 set(CMAKE_AUTOMOC ON)
 
@@ -20,10 +20,10 @@ add_executable(intranet
 		defaultrequesthandler.h
 		defaultrequesthandler.cpp
 		main.cpp
-		db.qsl
+		db.spis
 		${otherfiles}
 	)
-qsl_compile(TARGET intranet FILES db.qsl QTYPE)
+spis_compile(TARGET intranet FILES db.spis QTYPE)
 add_dependencies(intranet intranet.h)
 target_include_directories(intranet PUBLIC ${QtWebApp_INCLUDE_DIRS})
 target_link_libraries(intranet ${QtWebApp_LIBRARIES} Qt5::Gui Qt5::Sql)

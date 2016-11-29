@@ -36,7 +36,7 @@ private:
     qtwebapp::StaticFileController staticFiles;
     qtwebapp::TemplateCache templates;
 
-    qsl::db::intranet d;
+    spis::db::intranet d;
 	
 	QMutex helpmdmutex;
 	QFile helpmdfile;
