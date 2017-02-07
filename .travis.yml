@@ -29,6 +29,7 @@ addons:
       - qtchooser
       - qt5-default
       - realpath
+      - spis
       - sshfs
 
 before_install:
