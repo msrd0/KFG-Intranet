@@ -1,3 +1,7 @@
+intranet (1.2.0-1) precise; urgency=low
+
+ -- Dominic Meiser <meiserdo@web.de>  Tue, 07 Feb 2017 18:03:00 +0100
+
 intranet (1.1.2-1) precise; urgency=low
 
   * Version 1.1.2
