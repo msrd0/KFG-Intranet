@@ -22,6 +22,7 @@ addons:
       - cmake
       - debhelper
       - dpkg-dev
+      - fakeroot
       - g++-5
       - gcc-5
       - libqtwebapp-dev
