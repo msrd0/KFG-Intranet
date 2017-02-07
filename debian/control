@@ -1,7 +1,7 @@
 Source: intranet
 Priority: optional
 Maintainer: Dominic Meiser <meiserdo@web.de>
-Build-Depends: debhelper (>= 9), libqtwebapp-dev, cmake (>= 3.1), git, realpath
+Build-Depends: debhelper (>= 9), libqtwebapp-dev (>=1.7), cmake (>= 3.1), git, realpath
 Standards-Version: 3.9.8
 Section: unknown
 Homepage: https://msrd0.duckdns.org/git/msrd0/KFG-Intranet
