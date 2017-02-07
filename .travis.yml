@@ -37,16 +37,6 @@ before_install:
   - $CC --version
   - $CXX --version
 
-install:
-  - git clone --depth=1 https://github.com/msrd0/QSL.git
-  - pushd QSL
-  - mkdir build
-  - cd build
-  - cmake -DCMAKE_BUILD_TYPE=Release ..
-  - make -j2
-  - sudo make install
-  - popd
-
 before_script:
   - dig +short myip.opendns.com @resolver1.opendns.com
   - openssl aes-256-cbc -K $encrypted_e9321ec5018e_key -iv $encrypted_e9321ec5018e_iv -in .travis-keys.tar.xz.enc -out .travis-keys.tar.xz -d
@@ -58,7 +48,7 @@ before_script:
 
 script:
   - version=$(cat debian/changelog | grep -E '^intranet \(.+\) precise' | head -n1 | tr -d '(' | tr '-' ' ' | awk '{print $2}')
-  - echo "QSL $version"
+  - echo "KFG-Intranet $version"
   - wget "https://github.com/msrd0/KFG-Intranet/archive/v${version}.tar.gz"
   - tar xfz "v${version}.tar.gz"
   - pushd "KFG-Intranet-${version}"
