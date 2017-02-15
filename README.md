@@ -27,7 +27,7 @@ sudo apt-get install intranet
 
 2. Download https://github.com/msrd0/QtWebApp and install it
 
-3. Download https://msrd0.duckdns.org/git/msrd0/QSL and install it
+3. Download https://github.com/msrd0/SPIS and install it
 
 4. Clone the source code
 	```bash
@@ -40,6 +40,7 @@ sudo apt-get install intranet
 	cmake -DCMAKE_BUILD_TYPE=Release ..
 	make -j4
 	sudo make install
+	sudo ldconfig
 	```
 
 6. To execute the code, just enter
