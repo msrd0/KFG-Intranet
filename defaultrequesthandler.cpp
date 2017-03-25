@@ -296,9 +296,12 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			return;
 		}
 		
-		if (request.getParameter("row") == "new")
+		QByteArray rowname = request.getParameter("row");
+		
+		if (rowname == "new")
 		{
-			if (!d.rows().insert({request.getParameter("rowname")}))
+			rowname = request.getParameter("rowname");
+			if (!d.rows().insert({rowname}))
 			{
 				response.setHeader("Content-Type", "text/plain; charset=utf-8");
 				response.setStatus(500, "Internal Server Error");
@@ -307,7 +310,7 @@ void DefaultRequestHandler::service(HttpRequest &request, HttpResponse &response
 			}
 		}
 		
-		auto row = d.rows().filter("row_name" EQ request.getParameter("row")).query();
+		auto row = d.rows().filter("row_name" EQ rowname).query();
 		if (row.empty())
 		{
 			response.setHeader("Content-Type", "text/plain; charset=utf-8");
